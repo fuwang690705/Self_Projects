@@ -1,0 +1,92 @@
+:root {
+  color: #303133;
+  background: #f5f7fa;
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-shell {
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -12%, rgba(232, 197, 126, 0.38), transparent 34%),
+    linear-gradient(180deg, #cfe2d4 0%, #eef3e8 46%, #f7f4ea 100%);
+  color: #14201f;
+  display: flex;
+  justify-content: center;
+}
+
+.phone-frame {
+  position: relative;
+  width: min(100%, 480px);
+  height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+}
+
+.phone-frame.is-player {
+  height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(239, 234, 227, 0.12) 46%, rgba(239, 234, 227, 0.86)),
+    var(--cover-seed, linear-gradient(135deg, #1e4e60, #d8b052));
+}
+
+.phone-frame.is-player .content,
+.phone-frame.is-player .player-view {
+  height: 100%;
+}
+
+
+.content {
+  margin-top: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 16px 108px;
+  scrollbar-width: none;
+  background: transparent;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-frame.is-player .content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.phone-frame.is-subpage .content {
+  padding: 16px 16px 24px;
+}
+
+.view {
+  display: grid;
+  gap: 18px;
+}
+
+@media (min-width: 720px) {
+  .phone-frame .content {
+    padding-top: 0;
+  }
+}

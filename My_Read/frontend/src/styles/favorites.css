@@ -1,0 +1,48 @@
+.page-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-topbar .icon-button {
+  background: rgba(30, 78, 96, 0.08);
+}
+
+.page-topbar div {
+  display: grid;
+  gap: 2px;
+}
+
+.page-topbar strong {
+  font-size: 20px;
+}
+
+.page-topbar small,
+.favorite-copy small {
+  color: #68817c;
+  font-weight: 700;
+}
+
+.favorite-list {
+  display: grid;
+  gap: 10px;
+}
+
+.favorite-book {
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+}
+
+.favorite-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.favorite-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

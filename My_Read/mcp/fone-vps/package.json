@@ -1,0 +1,14 @@
+{
+  "name": "fone-vps-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Codex MCP server for deploying My_Read to fone-vps over SSH.",
+  "bin": {
+    "fone-vps-mcp": "./server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "ssh2": "^1.16.0"
+  }
+}

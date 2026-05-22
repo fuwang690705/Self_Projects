@@ -1,0 +1,464 @@
+.dialog-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-dialog {
+  --auth-ink: #172324;
+  --auth-muted: #6c7e79;
+  --auth-line: rgba(23, 35, 36, 0.1);
+}
+
+.auth-dialog .el-dialog {
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 246, 0.98)),
+    #fff;
+  box-shadow: 0 26px 70px rgba(14, 24, 28, 0.28);
+}
+
+.auth-dialog .el-dialog__header {
+  position: relative;
+  padding: 20px 20px 12px;
+  margin: 0;
+  border-bottom: 1px solid rgba(23, 35, 36, 0.06);
+  background:
+    linear-gradient(135deg, rgba(31, 70, 82, 0.12), transparent 54%),
+    linear-gradient(180deg, #fbfcf8, #fff);
+}
+
+.auth-dialog .el-dialog__headerbtn {
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(23, 35, 36, 0.06);
+}
+
+.auth-dialog .el-dialog__body {
+  padding: 16px 20px 20px;
+}
+
+.auth-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    linear-gradient(145deg, #193945, #2f6f67 52%, #bd8065);
+  box-shadow: 0 14px 28px rgba(25, 57, 69, 0.24);
+}
+
+.auth-dialog-head small,
+.auth-dialog-head strong {
+  display: block;
+}
+
+.auth-dialog-head small {
+  color: #82908c;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.auth-dialog-head strong {
+  margin-top: 4px;
+  color: var(--auth-ink);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: #eef3ef;
+  border: 1px solid rgba(23, 35, 36, 0.06);
+}
+
+.auth-tabs button {
+  min-height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7a76;
+  font-weight: 900;
+}
+
+.auth-tabs button.active {
+  background: #fff;
+  color: #173843;
+  box-shadow: 0 8px 20px rgba(23, 35, 36, 0.1);
+}
+
+.auth-form {
+  display: grid;
+  gap: 2px;
+}
+
+.auth-form .el-form-item {
+  margin-bottom: 14px;
+}
+
+.auth-form .el-form-item__label {
+  padding-bottom: 6px;
+  color: #445653;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.auth-form .el-input__wrapper {
+  min-height: 46px;
+  border-radius: 8px;
+  background: #f8faf6;
+  box-shadow: inset 0 0 0 1px var(--auth-line);
+  transition: box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.auth-form .el-input__wrapper.is-focus {
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(34, 91, 89, 0.5),
+    0 0 0 3px rgba(34, 91, 89, 0.1);
+}
+
+.auth-form .el-input__prefix {
+  color: #7e8c88;
+}
+
+.auth-actions {
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.auth-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.auth-actions .el-button {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.auth-primary {
+  border: none;
+  background:
+    linear-gradient(135deg, #193945, #2f6f67 58%, #a66d59) !important;
+  box-shadow: 0 14px 28px rgba(25, 57, 69, 0.22);
+}
+
+.auth-quick {
+  border-color: rgba(23, 35, 36, 0.1);
+  background: #fff;
+  color: #314542;
+}
+
+.about-copy {
+  margin: 0;
+  color: #516763;
+  line-height: 1.7;
+}
+
+.local-source-input {
+  display: none;
+}
+
+.source-manager-section {
+  display: grid;
+  gap: 10px;
+}
+
+.source-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.source-manager-head span {
+  color: #172324;
+  font-weight: 900;
+}
+
+.source-manager-head small {
+  color: #7c8a87;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.preset-source-list {
+  display: grid;
+  gap: 8px;
+}
+
+.preset-source-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(24, 44, 49, 0.08);
+  border-radius: 8px;
+  background: #fbfcf8;
+}
+
+.preset-source-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #edf6f2;
+  color: #2e7863;
+  font-weight: 900;
+}
+
+.preset-source-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.preset-source-copy strong,
+.preset-source-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-source-copy strong {
+  color: #172324;
+  font-size: 14px;
+}
+
+.preset-source-copy small {
+  color: #687875;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.local-source-section {
+  padding-top: 14px;
+  border-top: 1px solid rgba(30, 78, 96, 0.1);
+}
+
+.local-source-format,
+.local-source-example,
+.local-source-current,
+.local-source-note {
+  border-radius: 8px;
+}
+
+.local-source-format {
+  padding: 12px;
+  border: 1px solid rgba(30, 78, 96, 0.1);
+  background: rgba(30, 78, 96, 0.06);
+  color: #516763;
+  line-height: 1.55;
+}
+
+.local-source-format strong,
+.local-source-format p {
+  margin: 0;
+}
+
+.local-source-format p {
+  margin-top: 4px;
+}
+
+.local-source-example {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  background: #172324;
+  color: #e8f0ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.local-source-current {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f4fbf6;
+  border: 1px solid rgba(46, 120, 99, 0.16);
+}
+
+.local-source-current > .el-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #def1e8;
+  color: #2e7863;
+}
+
+.local-source-current span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.local-source-current strong,
+.local-source-current small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-source-current strong {
+  color: #172324;
+  font-size: 14px;
+}
+
+.local-source-current small {
+  color: #687875;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.local-source-note {
+  margin: 0;
+  padding: 10px 12px;
+  background: #f7faf9;
+  color: #6a7976;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.source-dialog .el-dialog__body {
+  display: grid;
+  gap: 14px;
+}
+
+.source-card {
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, #fff, #eef3ff);
+  border: 1px solid rgba(75, 103, 190, 0.12);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.source-card.connected {
+  background: linear-gradient(135deg, #f4fbf6, #eef5ff);
+}
+
+.source-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #5b6ff0, #6dd0b4);
+  color: #fff;
+  font-weight: 900;
+}
+
+.source-card strong,
+.source-card p {
+  margin: 0;
+}
+
+.source-card p {
+  margin-top: 4px;
+  color: #66727d;
+  line-height: 1.6;
+}
+
+.alist-guide {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f7faf9;
+  border: 1px solid rgba(30, 78, 96, 0.1);
+}
+
+.alist-qr {
+  width: 132px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid rgba(30, 78, 96, 0.1);
+  overflow: hidden;
+}
+
+.alist-qr img {
+  width: 116px;
+  height: 116px;
+}
+
+.alist-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.alist-steps strong,
+.alist-steps p {
+  margin: 0;
+}
+
+.alist-steps p {
+  margin-top: 3px;
+  color: #5f706f;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.fallback-settings {
+  border-top: 1px solid rgba(30, 78, 96, 0.1);
+  padding-top: 14px;
+}
+
+.folder-rule {
+  border: 1px solid rgba(30, 78, 96, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: rgba(30, 78, 96, 0.06);
+  color: #516763;
+  line-height: 1.6;
+}
+
+.folder-rule strong,
+.folder-rule p {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .alist-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .alist-qr {
+    justify-self: center;
+  }
+}
