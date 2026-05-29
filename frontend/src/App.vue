@@ -300,6 +300,12 @@
               <small>版本与说明</small>
               <el-icon><ArrowRight /></el-icon>
             </button>
+            <button class="profile-menu-logs" @click="logTerminalVisible = true">
+              <el-icon><Monitor /></el-icon>
+              <span>系统诊断日志</span>
+              <small>异常监控状态</small>
+              <el-icon><ArrowRight /></el-icon>
+            </button>
           </div>
         </section>
 
@@ -789,6 +795,75 @@
       </div>
     </el-dialog>
 
+    <!-- 系统诊断日志弹窗 -->
+    <el-dialog
+      v-model="logTerminalVisible"
+      width="min(94vw, 540px)"
+      class="clean-dialog terminal-dialog"
+    >
+      <template #header>
+        <div class="terminal-dialog-header">
+          <el-icon><Monitor /></el-icon>
+          <strong>系统监控与诊断日志</strong>
+        </div>
+      </template>
+      
+      <div class="terminal-body">
+        <div class="terminal-meta">
+          <span>已收集: {{ appLogs.length }}/200 条日志</span>
+          <span class="terminal-status">监控中...</span>
+        </div>
+        
+        <div class="terminal-log-area">
+          <div v-if="!appLogs.length" class="terminal-empty-line">
+            [SYSTEM] 当前暂无任何监控日志。
+          </div>
+          <div 
+            v-for="(log, i) in appLogs" 
+            :key="i" 
+            class="terminal-log-line"
+            :class="log.level ? log.level.toLowerCase() : 'info'"
+          >
+            <span class="log-time">[{{ log.time || '' }}]</span>
+            <span class="log-tag">[{{ log.level || 'INFO' }}][{{ log.module || 'SYS' }}]</span>
+            <span class="log-msg">{{ log.message || '' }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dialog-actions terminal-actions">
+        <el-button type="primary" class="auth-primary" @click="copyAllLogs">一键复制日志</el-button>
+        <el-button type="danger" plain @click="clearAllLogs">清空日志</el-button>
+        <el-button @click="logTerminalVisible = false">关闭</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- APP 闪退堆栈诊断弹窗 -->
+    <el-dialog
+      v-model="nativeCrashVisible"
+      width="min(94vw, 460px)"
+      class="clean-dialog crash-dialog"
+    >
+      <template #header>
+        <div class="crash-dialog-header">
+          <el-icon><WarningFilled /></el-icon>
+          <strong>检测到上次 APP 异常闪退</strong>
+        </div>
+      </template>
+      
+      <div class="crash-dialog-body">
+        <p class="crash-alert-text">抱歉，系统检测到您上次使用 App 时发生了一次底层异常崩溃。已为您自动抓取并恢复了崩溃时的 Java 堆栈信息：</p>
+        <div class="crash-stack-area">
+          {{ nativeCrashStack }}
+        </div>
+      </div>
+      
+      <div class="dialog-actions">
+        <el-button type="primary" class="auth-primary" @click="copyCrashStack">复制崩溃堆栈并发给作者</el-button>
+        <el-button @click="nativeCrashVisible = false">忽略</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 版本更新弹窗 (Version Update Popup) -->
     <el-dialog
       v-model="updateVisible"
@@ -1216,6 +1291,76 @@ const currentTime = ref(0)
 const duration = ref(0)
 const sliderValue = ref(0)
 const playbackRate = ref(1)
+
+const appLogs = ref(loadJson('my-read-app-logs', []))
+
+const isNativePlayer = computed(() => {
+  return typeof window !== 'undefined' && !!window.AndroidPlayer
+})
+
+function syncSystemUiColors() {
+  if (!isNativePlayer.value) return
+  
+  const statusBarColor = 'transparent'
+  const navigationBarColor = 'transparent'
+  const darkIcons = true // 由于系统为浅黄/浅绿渐变，状态栏与导航栏图标统一使用黑色/深色，美观大方
+  
+  try {
+    window.AndroidPlayer.setSystemUiColors(statusBarColor, navigationBarColor, darkIcons)
+  } catch (e) {
+    console.warn('Failed to set system UI colors:', e)
+  }
+}
+
+watch(activeTab, () => {
+  syncSystemUiColors()
+})
+const logTerminalVisible = ref(false)
+const nativeCrashVisible = ref(false)
+const nativeCrashStack = ref('')
+
+function writeAppLog(level, module, message) {
+  const now = new Date()
+  const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+  const logEntry = { time: timeStr, level, module, message }
+  
+  appLogs.value = [logEntry, ...appLogs.value].slice(0, 200)
+  saveJson('my-read-app-logs', appLogs.value)
+}
+window.writeAppLog = writeAppLog
+
+function showCrashDialog(crashLog) {
+  nativeCrashStack.value = crashLog
+  nativeCrashVisible.value = true
+  writeAppLog('CRITICAL_CRASH', 'NATIVE', `检测到上次APP闪退崩溃! 堆栈信息：\n${crashLog}`)
+}
+window.onNativeCrashCaptured = showCrashDialog
+
+function copyCrashStack() {
+  if (!nativeCrashStack.value) return
+  navigator.clipboard.writeText(nativeCrashStack.value)
+    .then(() => ElMessage.success('崩溃堆栈已成功复制到剪贴板，请发给开发人员分析'))
+    .catch(() => ElMessage.error('复制失败'))
+}
+
+function copyAllLogs() {
+  if (!appLogs.value.length) {
+    ElMessage.info('暂无日志可复制')
+    return
+  }
+  const text = appLogs.value.map(log => `[${log.time}] [${log.level}][${log.module}] ${log.message}`).join('\n')
+  navigator.clipboard.writeText(text)
+    .then(() => ElMessage.success('诊断日志已复制到剪贴板，可直接发给开发人员进行分析'))
+    .catch(() => ElMessage.error('复制失败，请手动选择复制'))
+}
+
+function clearAllLogs() {
+  appLogs.value = []
+  saveJson('my-read-app-logs', [])
+  ElMessage.success('监控日志已清空')
+}
+
+
 const isPlaying = ref(false)
 const isLoadingBooks = ref(false)
 const isLoadingAudio = ref(false)
@@ -1453,6 +1598,69 @@ async function loadSubscriptionSources() {
 }
 
 onMounted(async () => {
+  // 注册全局 JS 运行时报错自动拦截
+  window.onerror = function (message, source, lineno, colno, error) {
+    writeAppLog('ERROR', 'JS', `全局错误: ${message} (位置: ${source}:${lineno}:${colno})`)
+    return false
+  }
+
+  // 捕获 Native 崩溃日志（如果在 onMounted 之前被注入了）
+  if (window.lastNativeCrash) {
+    showCrashDialog(window.lastNativeCrash)
+    window.lastNativeCrash = null
+  }
+
+  // ==========================================
+  // 原生播放器六大回调事件强力绑定
+  // ==========================================
+  window.onNativePlayerPrepared = (nativeDuration) => {
+    writeAppLog('INFO', 'PLAYER', `原生播放器就绪，总时长: ${nativeDuration} 秒`)
+    duration.value = nativeDuration
+    isLoadingAudio.value = false
+    isPlaying.value = true
+    
+    // 如果有未定位的断点时间，对原生播放器进行跳转定位
+    if (pendingResumeTime.value > 0) {
+      window.AndroidPlayer.seekTo(pendingResumeTime.value)
+      currentTime.value = pendingResumeTime.value
+      sliderValue.value = pendingResumeTime.value
+      pendingResumeTime.value = 0
+    }
+  }
+
+  window.onNativePlayerProgress = (current, total) => {
+    currentTime.value = current
+    sliderValue.value = current
+    duration.value = total
+    
+    // 原生进度同样自动驱动应用后台数据统计与进度备份同步
+    trackListeningProgress()
+    persistPlaybackProgress()
+  }
+
+  window.onNativePlayerPaused = () => {
+    writeAppLog('INFO', 'PLAYER', '原生播放器已暂停')
+    isPlaying.value = false
+  }
+
+  window.onNativePlayerResumed = () => {
+    writeAppLog('INFO', 'PLAYER', '原生播放器恢复播放')
+    isPlaying.value = true
+  }
+
+  window.onNativePlayerEnded = () => {
+    writeAppLog('INFO', 'PLAYER', '原生音频章节播放完毕，自动切下一章')
+    isPlaying.value = false
+    onEnded()
+  }
+
+  window.onNativePlayerError = (what, extra) => {
+    writeAppLog('ERROR', 'PLAYER', `原生播放器发生崩溃 [代码: ${what}, 附加: ${extra}]`)
+    isLoadingAudio.value = false
+    isPlaying.value = false
+    onAudioError()
+  }
+
   const saved = loadPlaybackState()
   playbackRate.value = saved.playbackRate || 1
   playbackRateDraft.value = playbackRate.value
@@ -1469,6 +1677,9 @@ onMounted(async () => {
   }
   await loadBooks({ ...saved, records: savedRecords })
   checkAppVersion()
+  
+  // 延迟 400ms 触发首屏动态系统栏配色同步，确保 Java 实例已绑定
+  setTimeout(syncSystemUiColors, 400)
 })
 
 onUnmounted(() => {
@@ -1487,7 +1698,11 @@ watch([currentBook, currentChapter, currentTime, playbackRate], () => {
 })
 
 watch(playbackRate, (rate) => {
-  if (audioRef.value) audioRef.value.playbackRate = rate
+  if (isNativePlayer.value) {
+    window.AndroidPlayer.setSpeed(rate)
+  } else if (audioRef.value) {
+    audioRef.value.playbackRate = rate
+  }
   playbackRateDraft.value = rate
 })
 
@@ -1974,13 +2189,26 @@ async function selectChapter(chapter, shouldAutoPlay = false) {
 }
 
 async function loadAudioForChapter(chapter, shouldAutoPlay) {
-  if (!audioRef.value || !chapter) return
+  if (!chapter) return
 
   isLoadingAudio.value = true
   try {
     const { url, duration: probedDuration } = await getAudioUrl(chapter.fileId)
     if (!url) throw new Error('没有获取到音频播放地址')
+    
+    // 将相对路径补全为原生端可正确请求的绝对 IP/域名
+    const fullUrl = url.startsWith('http') ? url : `${getApiServer()}${url}`
     duration.value = Number.isFinite(probedDuration) && probedDuration > 0 ? probedDuration : 0
+    writeAppLog('INFO', 'PLAYER', `加载新章节音频: ${chapter.name}`)
+
+    if (isNativePlayer.value) {
+      // APP 模式下直接把音频流重定向分流给 Java 原生播放器
+      window.AndroidPlayer.play(fullUrl)
+      window.AndroidPlayer.setSpeed(playbackRate.value)
+      return
+    }
+
+    if (!audioRef.value) return
     audioRef.value.pause()
     audioRef.value.removeAttribute('src')
     audioRef.value.src = url
@@ -1995,8 +2223,11 @@ async function loadAudioForChapter(chapter, shouldAutoPlay) {
     }
   } catch (error) {
     ElMessage.error(normalizeAudioError(error))
+    writeAppLog('ERROR', 'PLAYER', `音频加载失败: ${error.message || error}`)
   } finally {
-    isLoadingAudio.value = false
+    if (!isNativePlayer.value) {
+      isLoadingAudio.value = false
+    }
   }
 }
 
@@ -2032,8 +2263,18 @@ function normalizeAudioError(error) {
 }
 
 async function togglePlay() {
-  if (!audioRef.value || !currentChapter.value) return
+  if (!currentChapter.value) return
 
+  if (isNativePlayer.value) {
+    if (isPlaying.value) {
+      window.AndroidPlayer.pause()
+    } else {
+      window.AndroidPlayer.resume()
+    }
+    return
+  }
+
+  if (!audioRef.value) return
   if (!audioRef.value.src) {
     await loadAudioForChapter(currentChapter.value, true)
     return
@@ -2047,7 +2288,18 @@ async function togglePlay() {
 }
 
 async function seekTo(value) {
-  if (!audioRef.value || !Number.isFinite(value)) return
+  if (!Number.isFinite(value)) return
+
+  if (isNativePlayer.value) {
+    const nextTime = Math.max(0, Math.min(duration.value || value, value))
+    window.AndroidPlayer.seekTo(nextTime)
+    currentTime.value = nextTime
+    sliderValue.value = nextTime
+    persistPlaybackProgress(true)
+    return
+  }
+
+  if (!audioRef.value) return
   if (!audioRef.value.src && currentChapter.value) {
     pendingResumeTime.value = value
     await loadAudioForChapter(currentChapter.value, false)
@@ -2467,7 +2719,11 @@ function loadJson(key, fallback) {
 }
 
 function saveJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (e) {
+    console.warn('Failed to save JSON to localStorage:', e)
+  }
 }
 
 function loadListeningStats() {
@@ -2690,13 +2946,17 @@ async function updateSystemMediaSession() {
     title,
     artist,
     album,
-    ...(artworkUrl ? {
-      artwork: [{
-        src: artworkUrl,
-        sizes: '512x512',
-        type: 'image/jpeg'
-      }]
-    } : {})
+    // 极致防守：即使音频没有封面，也必须传入包含空src的对象数组 []，
+    // 从而百分之百防止 io.github.jofr.capacitor.mediasessionplugin 原生插件在 toList() 时抛出 NullPointerException 导致 APP 直接闪退崩溃！
+    artwork: artworkUrl ? [{
+      src: artworkUrl,
+      sizes: '512x512',
+      type: 'image/jpeg'
+    }] : [{
+      src: '',
+      sizes: '512x512',
+      type: 'image/jpeg'
+    }]
   }
   
   try {

@@ -7,7 +7,7 @@ export function getApiServer() {
   const isNative = typeof window !== 'undefined' && !!window.Capacitor;
   if (isNative) {
     // 固化强制使用官方线上 API，防止 localStorage 中的旧报错配置或本地调试地址干扰
-    return 'http://listen.techfone.xyz';
+    return 'https://listen.techfone.xyz';
   }
 
   try {
@@ -25,7 +25,7 @@ export function getApiServer() {
   const isWebRemote = typeof window !== 'undefined' && 
     window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
   
-  return isWebRemote ? 'http://listen.techfone.xyz' : ''
+  return isWebRemote ? 'https://listen.techfone.xyz' : ''
 }
 
 export function saveApiServer(url) {
@@ -61,27 +61,41 @@ async function request(path, options = {}) {
   const base = getApiServer()
   const fullPath = (path.startsWith('http://') || path.startsWith('https://')) ? path : `${base}${path}`
   
-  const response = await fetch(fullPath, {
-    ...options,
-    headers: {
-      ...jsonHeaders,
-      'X-My-Read-Client-Id': clientId(),
-      ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {})
+  try {
+    const response = await fetch(fullPath, {
+      ...options,
+      headers: {
+        ...jsonHeaders,
+        'X-My-Read-Client-Id': clientId(),
+        ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {})
+      }
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const message = payload?.error?.message || payload?.message || `请求失败：${response.status}`
+      
+      // 记录到本地异常监控日志系统中
+      if (typeof window !== 'undefined' && window.writeAppLog) {
+        window.writeAppLog('ERROR', 'API', `接口请求失败: ${path} [状态码: ${response.status}] - ${message}`)
+      }
+
+      const error = new Error(message)
+      error.status = response.status
+      error.payload = payload
+      throw error
     }
-  })
 
-  const payload = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    const message = payload?.error?.message || payload?.message || `请求失败：${response.status}`
-    const error = new Error(message)
-    error.status = response.status
-    error.payload = payload
-    throw error
+    return payload
+  } catch (err) {
+    // 捕获网络超时、跨域、服务器挂掉等网络底层 fetch 异常并自动记录
+    if (typeof window !== 'undefined' && window.writeAppLog) {
+      window.writeAppLog('ERROR', 'API', `网络连接异常或服务器崩溃: ${path} - ${err.message || err}`)
+    }
+    throw err
   }
-
-  return payload
 }
 
 export function getAuthStatus() {

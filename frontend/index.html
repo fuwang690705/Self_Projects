@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>阅动</title>
+    <!-- 引入移动端调试神器 vConsole，方便直接在手机屏幕右下角点击绿球查看所有 console 日志和报错堆栈 -->
+    <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
+    <script>
+      try {
+        if (typeof window !== 'undefined') {
+          window.vConsole = new window.VConsole();
+        }
+      } catch (e) {
+        console.warn('Failed to initialize vConsole:', e);
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

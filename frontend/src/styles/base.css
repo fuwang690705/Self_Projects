@@ -90,3 +90,8 @@ button {
     padding-top: 0;
   }
 }
+
+/* 智能适配刘海屏与状态栏：通过 safe-area-inset-top 动态下推 Element Plus 消息提示框，解决看不见的问题 */
+.el-message {
+  top: calc(30px + env(safe-area-inset-top)) !important;
+}

@@ -796,3 +796,190 @@
   color: #173843;
 }
 
+/* ==========================================================================
+   APP 系统监控与诊断日志弹窗 (Terminal Diagnosis Dialog)
+   ========================================================================== */
+.terminal-dialog .el-dialog {
+  border-radius: 12px;
+  background: #121816;
+  border: 1px solid #1f3a32;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.6);
+  padding: 0;
+  overflow: hidden;
+}
+
+.terminal-dialog .el-dialog__header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #1c2b25;
+  background: #141c19;
+}
+
+.terminal-dialog-header {
+  font-size: 16px;
+  font-weight: 900;
+  color: #39b58e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-dialog .el-dialog__headerbtn {
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.terminal-dialog .el-dialog__body {
+  padding: 16px 20px 20px;
+}
+
+.terminal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.terminal-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #5d7c71;
+  font-family: ui-monospace, monospace;
+}
+
+.terminal-status {
+  color: #39b58e;
+  animation: terminalBlink 1.5s infinite;
+}
+
+@keyframes terminalBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.terminal-log-area {
+  background: #080c0b;
+  border: 1px solid #14221c;
+  border-radius: 6px;
+  padding: 14px;
+  height: 260px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a3bfb2;
+}
+
+/* 自定义终端滚动条 */
+.terminal-log-area::-webkit-scrollbar {
+  width: 6px;
+}
+.terminal-log-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.terminal-log-area::-webkit-scrollbar-thumb {
+  background: #1f3a32;
+  border-radius: 4px;
+}
+
+.terminal-empty-line {
+  color: #5d7c71;
+  font-style: italic;
+}
+
+.terminal-log-line {
+  margin-bottom: 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.terminal-log-line .log-time {
+  color: #4b6a5d;
+  margin-right: 6px;
+}
+
+.terminal-log-line .log-tag {
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+/* 结构化日志分级配色 */
+.terminal-log-line.info .log-tag {
+  color: #45b3e3;
+}
+.terminal-log-line.warn .log-tag {
+  color: #e5b567;
+}
+.terminal-log-line.error .log-tag {
+  color: #e35a5a;
+}
+.terminal-log-line.critical_crash {
+  background: rgba(227, 90, 90, 0.1);
+  border-left: 2px solid #e35a5a;
+  padding-left: 6px;
+}
+.terminal-log-line.critical_crash .log-tag {
+  color: #ff3333;
+}
+
+.terminal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   APP 原生异常闪退弹窗 (Crash Dialog)
+   ========================================================================== */
+.crash-dialog .el-dialog {
+  border-radius: 12px;
+  background: #fffdfc;
+  border: 1px solid rgba(227, 90, 90, 0.18);
+  box-shadow: 0 26px 70px rgba(227, 90, 90, 0.16);
+}
+
+.crash-dialog-header {
+  font-size: 16px;
+  font-weight: 900;
+  color: #d94b4b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crash-dialog-body {
+  display: grid;
+  gap: 12px;
+}
+
+.crash-alert-text {
+  margin: 0;
+  color: #6e5858;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.crash-stack-area {
+  background: #231d1d;
+  border: 1px solid #3c2a2a;
+  border-radius: 6px;
+  padding: 14px;
+  height: 180px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #f7d4d4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.crash-stack-area::-webkit-scrollbar {
+  width: 5px;
+}
+.crash-stack-area::-webkit-scrollbar-thumb {
+  background: #4a3636;
+  border-radius: 4px;
+}
+

@@ -10,10 +10,16 @@ export function loadPlaybackState() {
 }
 
 export function savePlaybackState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    currentBookId: state.currentBookId || null,
-    currentChapterId: state.currentChapterId || null,
-    currentTime: Number.isFinite(state.currentTime) ? state.currentTime : 0,
-    playbackRate: state.playbackRate || 1
-  }))
+  try {
+    if (!state) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentBookId: state.currentBookId || null,
+      currentChapterId: state.currentChapterId || null,
+      currentTime: Number.isFinite(state.currentTime) ? state.currentTime : 0,
+      playbackRate: state.playbackRate || 1
+    }))
+  } catch (e) {
+    console.warn('Failed to save playback state to localStorage:', e)
+  }
 }
+

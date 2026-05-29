@@ -5,6 +5,7 @@ import { config } from './config.js'
 
 let pool = null
 let mysqlReady = false
+let mysqlDisabled = false
 
 function mysqlConfig() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL
@@ -23,6 +24,7 @@ function mysqlConfig() {
 }
 
 export async function getPool() {
+  if (mysqlDisabled) return null
   if (pool) return pool
 
   const options = mysqlConfig()
@@ -160,6 +162,7 @@ export async function initDatabase() {
     console.error(`初始化 MySQL 表结构失败: ${error.message}。系统将退回本地 JSON 存储。`)
     pool = null
     mysqlReady = false
+    mysqlDisabled = true
   }
 }
 

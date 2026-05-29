@@ -61,6 +61,7 @@
   align-items: center;
   gap: 10px;
   min-height: 46px;
+  margin-top: env(safe-area-inset-top); /* 智能避让状态栏与刘海屏，防截断 */
 }
 
 .player-topbar strong {
