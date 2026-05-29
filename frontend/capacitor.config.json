@@ -1,0 +1,10 @@
+{
+  "appId": "com.techfone.listen",
+  "appName": "阅动",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

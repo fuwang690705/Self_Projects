@@ -1,5 +1,46 @@
 const jsonHeaders = { Accept: 'application/json' }
 const CLIENT_ID_KEY = 'my-read-client-id:v1'
+const API_SERVER_KEY = 'my-read-api-server:v1'
+
+export function getApiServer() {
+  // 检测是否处于 Capacitor 原生 App 环境中
+  const isNative = typeof window !== 'undefined' && !!window.Capacitor;
+  if (isNative) {
+    // 固化强制使用官方线上 API，防止 localStorage 中的旧报错配置或本地调试地址干扰
+    return 'http://listen.techfone.xyz';
+  }
+
+  try {
+    let saved = localStorage.getItem(API_SERVER_KEY)
+    if (saved) {
+      saved = saved.trim().replace(/\/$/, '')
+      if (saved && !saved.startsWith('http://') && !saved.startsWith('https://')) {
+        saved = `http://${saved}`
+      }
+      return saved
+    }
+  } catch {}
+  
+  // 浏览器环境下，若是远程访问则返回官方线上 API，否则本地开发使用相对路径
+  const isWebRemote = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+  
+  return isWebRemote ? 'http://listen.techfone.xyz' : ''
+}
+
+export function saveApiServer(url) {
+  try {
+    if (url) {
+      let cleaned = url.trim().replace(/\/$/, '')
+      if (cleaned && !cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+        cleaned = `http://${cleaned}`
+      }
+      localStorage.setItem(API_SERVER_KEY, cleaned)
+    } else {
+      localStorage.removeItem(API_SERVER_KEY)
+    }
+  } catch {}
+}
 
 function clientId() {
   try {
@@ -17,7 +58,10 @@ function clientId() {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(path, {
+  const base = getApiServer()
+  const fullPath = (path.startsWith('http://') || path.startsWith('https://')) ? path : `${base}${path}`
+  
+  const response = await fetch(fullPath, {
     ...options,
     headers: {
       ...jsonHeaders,

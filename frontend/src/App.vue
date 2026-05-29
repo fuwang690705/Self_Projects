@@ -142,8 +142,8 @@
                 <div class="cover-blur"></div>
                 <div class="player-art" :class="{ playing: isPlaying }">
                   <span>{{ bookInitial }}</span>
-                  <strong>{{ currentBook?.title || '我的听书' }}</strong>
-                  <em>My Read Audio</em>
+                  <strong>{{ currentBook?.title || '阅动' }}</strong>
+                  <em>Readio</em>
                 </div>
               </div>
 
@@ -284,13 +284,19 @@
             </button>
             <button v-if="false" class="profile-menu-settings" @click="openSettings">
               <el-icon><Setting /></el-icon>
-              <span>AList 网盘授权</span>
-              <small>WebDAV / 本地目录</small>
+              <span>授权与网盘设置</span>
+              <small>已连接 {{ authStatus?.sourceType === 'webdav' ? 'WebDAV' : authStatus?.sourceType === 'local' ? '本地目录' : '未连接' }}</small>
+              <el-icon><ArrowRight /></el-icon>
+            </button>
+            <button v-if="false" class="profile-menu-api" @click="openApiServerDialog">
+              <el-icon><Connection /></el-icon>
+              <span>API 服务器地址</span>
+              <small>{{ displayApiServer }}</small>
               <el-icon><ArrowRight /></el-icon>
             </button>
             <button class="profile-menu-about" @click="aboutVisible = true">
               <el-icon><InfoFilled /></el-icon>
-              <span>关于极简听书</span>
+              <span>关于阅动</span>
               <small>版本与说明</small>
               <el-icon><ArrowRight /></el-icon>
             </button>
@@ -574,7 +580,7 @@
             <el-icon><Headset /></el-icon>
           </span>
           <div>
-            <small>MY READ</small>
+            <small>Readio</small>
             <strong>{{ loginMode === 'login' ? '欢迎回来' : '创建账户' }}</strong>
           </div>
         </div>
@@ -739,7 +745,7 @@
 
     <el-dialog v-model="aboutVisible" width="min(92vw, 380px)" class="clean-dialog">
       <template #header>
-        <strong>关于极简听书</strong>
+        <strong>关于阅动</strong>
       </template>
       <p class="about-copy" style="margin-bottom: 12px;">一个面向移动端的私人听书播放器，当前支持 WebDAV 音频目录、书架、播放进度和倍速播放。</p>
       <div 
@@ -757,6 +763,30 @@
         <el-icon><Upload /></el-icon>
         版本发布管理
       </el-button>
+    </el-dialog>
+
+    <!-- API 服务器设置弹窗 (API Server Settings Dialog) -->
+    <el-dialog v-model="apiServerVisible" width="min(92vw, 380px)" class="clean-dialog api-server-dialog">
+      <template #header>
+        <strong>API 服务器设置</strong>
+      </template>
+      <div style="margin-bottom: 16px;">
+        <p class="about-copy" style="margin-bottom: 12px; font-size: 13px; line-height: 1.5; color: var(--el-text-color-secondary);">
+          当应用运行在安卓客户端或非局域网环境下，可在此配置您的后端 API 服务地址。配置完成后将重新加载应用生效。
+        </p>
+      </div>
+      <el-form label-position="top" @submit.prevent>
+        <el-form-item label="服务器基地址">
+          <el-input v-model="apiServerForm.url" placeholder="如 http://listen.techfone.xyz" clearable />
+          <small style="color: var(--el-text-color-secondary); margin-top: 4px; display: block; font-size: 11px;">
+            留空表示使用当前域名（相对路径）。
+          </small>
+        </el-form-item>
+      </el-form>
+      <div class="dialog-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 8px;">
+        <el-button type="primary" @click="saveApiServerSettings">保存并应用</el-button>
+        <el-button text @click="apiServerVisible = false">取消</el-button>
+      </div>
     </el-dialog>
 
     <!-- 版本更新弹窗 (Version Update Popup) -->
@@ -1144,6 +1174,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { MediaSession } from '@jofr/capacitor-media-session'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAuthConfig,
@@ -1165,7 +1196,9 @@ import {
   updateUserProfile,
   getLatestVersion,
   releaseNewVersion,
-  verifyAdminPasscode
+  verifyAdminPasscode,
+  getApiServer,
+  saveApiServer
 } from './api'
 import { loadPlaybackState, savePlaybackState } from './storage'
 
@@ -1191,6 +1224,30 @@ const isAuthing = ref(false)
 const loginVisible = ref(false)
 const settingsVisible = ref(false)
 const aboutVisible = ref(false)
+const apiServerVisible = ref(false)
+const apiServerForm = reactive({
+  url: getApiServer()
+})
+
+const displayApiServer = computed(() => {
+  const s = apiServerForm.url || getApiServer()
+  if (!s) return '默认域名'
+  return s.replace(/^https?:\/\//, '')
+})
+
+function openApiServerDialog() {
+  apiServerForm.url = getApiServer()
+  apiServerVisible.value = true
+}
+
+function saveApiServerSettings() {
+  saveApiServer(apiServerForm.url)
+  apiServerVisible.value = false
+  ElMessage.success('服务器地址配置已保存，应用已重新加载')
+  setTimeout(() => {
+    window.location.reload()
+  }, 800)
+}
 
 // App Version states
 const CURRENT_VERSION_NAME = '1.0.0'
@@ -1281,7 +1338,7 @@ const settingsForm = reactive({
   username: '',
   password: '',
   rootPath: '/',
-  bookTitle: '我的听书'
+  bookTitle: '阅动'
 })
 
 const localForm = reactive({
@@ -1297,7 +1354,7 @@ const aliyunForm = reactive({
   redirectUri: '',
   scope: 'user:base,file:all:read',
   rootFileId: 'root',
-  bookTitle: '我的听书'
+  bookTitle: '阅动'
 })
 
 const loginForm = reactive({
@@ -1345,7 +1402,7 @@ const hasPrevious = computed(() => currentIndex.value > 0)
 const hasNext = computed(() => currentIndex.value >= 0 && currentIndex.value < chapters.value.length - 1)
 const bookInitial = computed(() => currentBook.value?.title?.slice(0, 1) || '听')
 const coverGradient = computed(() => {
-  const seed = currentBook.value?.title || '我的听书'
+  const seed = currentBook.value?.title || '阅动'
   const hue = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0) % 360
   return `linear-gradient(135deg, hsl(${hue} 42% 38%), hsl(${(hue + 72) % 360} 46% 54%))`
 })
@@ -1432,6 +1489,13 @@ watch([currentBook, currentChapter, currentTime, playbackRate], () => {
 watch(playbackRate, (rate) => {
   if (audioRef.value) audioRef.value.playbackRate = rate
   playbackRateDraft.value = rate
+})
+
+watch(currentChapter, (newChapter) => {
+  if (newChapter) {
+    updateSystemMediaSession()
+    initSystemMediaSessionHandlers()
+  }
 })
 
 watch([skipIntroSeconds, skipOutroSeconds], () => {
@@ -1775,14 +1839,14 @@ async function loadConfig() {
       redirectUri: data.redirectUri || '',
       scope: data.scope || 'user:base,file:all:read',
       rootFileId: data.rootFileId || 'root',
-      bookTitle: data.bookTitle || '我的听书'
+      bookTitle: data.bookTitle || '阅动'
     })
     Object.assign(settingsForm, {
       baseUrl: wd.baseUrl || '',
       username: wd.username || '',
       password: '',
       rootPath: wd.rootPath || '/',
-      bookTitle: wd.bookTitle || '我的听书'
+      bookTitle: wd.bookTitle || '阅动'
     })
     Object.assign(localForm, {
       enabled: local.enabled !== false,
@@ -2030,16 +2094,21 @@ function onTimeUpdate() {
     return
   }
   trackListeningProgress()
+  updateSystemPositionState()
 }
 
 function onAudioPlay() {
   isPlaying.value = true
   lastTrackedTime = audioRef.value?.currentTime || 0
+  updateSystemPlaybackState('playing')
+  updateSystemMediaSession()
+  initSystemMediaSessionHandlers()
 }
 
 function onAudioPause() {
   isPlaying.value = false
   persistPlaybackProgress(true)
+  updateSystemPlaybackState('paused')
 }
 
 function onEnded() {
@@ -2601,6 +2670,124 @@ async function checkAppVersion() {
     }
   } catch (error) {
     console.warn('获取最新版本失败：', error.message)
+  }
+}
+
+// MediaSession Native & Web Bridge
+const hasNativeMediaSession = computed(() => {
+  return typeof window !== 'undefined' && !!window.Capacitor
+})
+
+async function updateSystemMediaSession() {
+  if (!currentBook.value || !currentChapter.value) return
+  
+  const title = currentChapter.value.name || '无章节标题'
+  const artist = bookAuthor(currentBook.value)
+  const album = currentBook.value.title
+  const artworkUrl = coverVisible(currentBook.value) ? coverUrlFor(currentBook.value) : ''
+  
+  const metadata = {
+    title,
+    artist,
+    album,
+    ...(artworkUrl ? {
+      artwork: [{
+        src: artworkUrl,
+        sizes: '512x512',
+        type: 'image/jpeg'
+      }]
+    } : {})
+  }
+  
+  try {
+    // 1. Web standard
+    if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title,
+        artist,
+        album,
+        ...(artworkUrl ? { artwork: [{ src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }] } : {})
+      })
+    }
+    
+    // 2. Capacitor Native
+    if (hasNativeMediaSession.value) {
+      await MediaSession.setMetadata(metadata)
+    }
+  } catch (err) {
+    console.warn('Failed to set media metadata:', err)
+  }
+}
+
+async function updateSystemPlaybackState(state) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+      navigator.mediaSession.playbackState = state
+    }
+    
+    if (hasNativeMediaSession.value) {
+      await MediaSession.setPlaybackState({ playbackState: state })
+    }
+  } catch (err) {
+    console.warn('Failed to set playback state:', err)
+  }
+}
+
+let lastPositionUpdate = 0
+async function updateSystemPositionState() {
+  if (!duration.value) return
+  const now = Date.now()
+  if (now - lastPositionUpdate < 1000) return
+  lastPositionUpdate = now
+  
+  const position = currentTime.value || 0
+  const rate = playbackRate.value || 1
+  const dur = duration.value
+  
+  try {
+    if (typeof navigator !== 'undefined' && navigator.mediaSession?.setPositionState) {
+      navigator.mediaSession.setPositionState({
+        duration: dur,
+        playbackRate: rate,
+        position: position
+      })
+    }
+    
+    if (hasNativeMediaSession.value) {
+      await MediaSession.setPositionState({
+        duration: dur,
+        playbackRate: rate,
+        position: position
+      })
+    }
+  } catch (err) {
+    console.warn('Failed to set position state:', err)
+  }
+}
+
+function initSystemMediaSessionHandlers() {
+  try {
+    // Web standard
+    if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+      navigator.mediaSession.setActionHandler('play', togglePlay)
+      navigator.mediaSession.setActionHandler('pause', togglePlay)
+      navigator.mediaSession.setActionHandler('previoustrack', hasPrevious.value ? playPrevious : null)
+      navigator.mediaSession.setActionHandler('nexttrack', hasNext.value ? playNext : null)
+      navigator.mediaSession.setActionHandler('seekbackward', () => jumpBy(-15))
+      navigator.mediaSession.setActionHandler('seekforward', () => jumpBy(15))
+    }
+    
+    // Capacitor Native
+    if (hasNativeMediaSession.value) {
+      MediaSession.setActionHandler({ action: 'play' }, togglePlay)
+      MediaSession.setActionHandler({ action: 'pause' }, togglePlay)
+      MediaSession.setActionHandler({ action: 'previoustrack' }, hasPrevious.value ? playPrevious : () => {})
+      MediaSession.setActionHandler({ action: 'nexttrack' }, hasNext.value ? playNext : () => {})
+      MediaSession.setActionHandler({ action: 'seekbackward' }, () => jumpBy(-15))
+      MediaSession.setActionHandler({ action: 'seekforward' }, () => jumpBy(15))
+    }
+  } catch (err) {
+    console.warn('Failed to set action handlers:', err)
   }
 }
 

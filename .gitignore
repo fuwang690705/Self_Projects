@@ -22,3 +22,7 @@ build/
 data/
 backend/data/
 
+# Android APK builds
+apk/
+
+
