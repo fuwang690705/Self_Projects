@@ -156,8 +156,11 @@ export async function searchSources(keyword) {
   const all = await Promise.all([
     searchBuiltinSources(keyword).catch(() => []),
     ...sources.map(async (source) => {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 秒超短强行熔断防阻塞
+      
       try {
-        const response = await fetch(source.url)
+        const response = await fetch(source.url, { signal: controller.signal })
         if (!response.ok) return []
         const xml = await response.text()
         const rows = parseRss(xml)
@@ -165,8 +168,14 @@ export async function searchSources(keyword) {
           .filter((item) => item.title.toLowerCase().includes(query) || item.author.toLowerCase().includes(query))
           .map((item) => ({ ...item, sourceId: source.id, sourceName: source.name }))
       } catch (error) {
-        console.warn(`获取/解析订阅源失败: ${source.url} - ${error.message}`)
+        if (error.name === 'AbortError') {
+          console.warn(`获取订阅源超时已自动熔断: ${source.url}`)
+        } else {
+          console.warn(`获取/解析订阅源失败: ${source.url} - ${error.message}`)
+        }
         return []
+      } finally {
+        clearTimeout(timeoutId)
       }
     })
   ])
