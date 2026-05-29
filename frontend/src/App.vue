@@ -2203,6 +2203,15 @@ async function loadAudioForChapter(chapter, shouldAutoPlay) {
 
     if (isNativePlayer.value) {
       // APP 模式下直接把音频流重定向分流给 Java 原生播放器
+      try {
+        if (window.AndroidPlayer.setMetadata) {
+          const chapterName = chapter ? chapter.name : '未知章节'
+          const bookTitle = currentBook.value ? currentBook.value.title : '我的有声书'
+          window.AndroidPlayer.setMetadata(chapterName, bookTitle)
+        }
+      } catch (err) {
+        console.warn('Failed to set AndroidPlayer metadata:', err)
+      }
       window.AndroidPlayer.play(fullUrl)
       window.AndroidPlayer.setSpeed(playbackRate.value)
       return

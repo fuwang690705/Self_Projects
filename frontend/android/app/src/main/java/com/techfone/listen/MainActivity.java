@@ -7,6 +7,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.media.MediaPlayer;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
+import android.media.MediaMetadata;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -216,10 +219,12 @@ public class MainActivity extends BridgeActivity {
         private MediaPlayer mediaPlayer;
         private String currentUrl;
         private float speed = 1.0f;
+        private MediaSession mediaSession;
 
         public NativePlayer() {
             mediaPlayer = new MediaPlayer();
             setupWakeMode();
+            setupMediaSession();
         }
 
         public MediaPlayer getMediaPlayer() {
@@ -235,6 +240,95 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        // 初始化原生系统的 MediaSession，用以在锁屏、通知栏及流体云/灵动岛生成控制卡片
+        private void setupMediaSession() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    mediaSession = new MediaSession(getApplicationContext(), "MyReadMediaSession");
+                    mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+                    
+                    mediaSession.setCallback(new MediaSession.Callback() {
+                        @Override
+                        public void onPlay() {
+                            resume();
+                        }
+
+                        @Override
+                        public void onPause() {
+                            pause();
+                        }
+
+                        @Override
+                        public void onSkipToNext() {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (bridge != null && bridge.getWebView() != null) {
+                                        bridge.getWebView().evaluateJavascript("if (window.onNativePlayerSkipNext) { window.onNativePlayerSkipNext(); }", null);
+                                    }
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onSkipToPrevious() {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (bridge != null && bridge.getWebView() != null) {
+                                        bridge.getWebView().evaluateJavascript("if (window.onNativePlayerSkipPrev) { window.onNativePlayerSkipPrev(); }", null);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        @Override
+                        public void onSeekTo(long pos) {
+                            seekTo((int)(pos / 1000));
+                        }
+                    });
+                    
+                    mediaSession.setActive(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private void updatePlaybackState(int state, long position, float speedRate) {
+            if (mediaSession != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    PlaybackState.Builder stateBuilder = new PlaybackState.Builder()
+                        .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE 
+                                  | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SKIP_TO_NEXT 
+                                  | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SEEK_TO)
+                        .setState(state, position, speedRate);
+                    mediaSession.setPlaybackState(stateBuilder.build());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        @JavascriptInterface
+        public void setMetadata(final String title, final String artist) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mediaSession != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        try {
+                            MediaMetadata.Builder metadataBuilder = new MediaMetadata.Builder()
+                                .putString(MediaMetadata.METADATA_KEY_TITLE, title)
+                                .putString(MediaMetadata.METADATA_KEY_ARTIST, artist);
+                            mediaSession.setMetadata(metadataBuilder.build());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
         }
 
         // JS 动态设置图标深浅色以及强行渲染底色以实现完美的沉浸式体验
@@ -292,6 +386,8 @@ public class MainActivity extends BridgeActivity {
                         mediaPlayer.reset();
                         mediaPlayer.setDataSource(url);
                         
+                        updatePlaybackState(PlaybackState.STATE_BUFFERING, 0, 0);
+                        
                         mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                             @Override
                             public void onPrepared(MediaPlayer mp) {
@@ -303,6 +399,7 @@ public class MainActivity extends BridgeActivity {
                                 handler.removeCallbacks(progressUpdater);
                                 handler.post(progressUpdater);
                                 
+                                updatePlaybackState(PlaybackState.STATE_PLAYING, 0, speed);
                                 notifyFrontPlayerPrepared(mp.getDuration() / 1000);
                             }
                         });
@@ -311,6 +408,7 @@ public class MainActivity extends BridgeActivity {
                             @Override
                             public void onCompletion(MediaPlayer mp) {
                                 handler.removeCallbacks(progressUpdater);
+                                updatePlaybackState(PlaybackState.STATE_STOPPED, 0, 0);
                                 notifyFrontPlayerEnded();
                             }
                         });
@@ -319,6 +417,7 @@ public class MainActivity extends BridgeActivity {
                             @Override
                             public boolean onError(MediaPlayer mp, int what, int extra) {
                                 handler.removeCallbacks(progressUpdater);
+                                updatePlaybackState(PlaybackState.STATE_ERROR, 0, 0);
                                 notifyFrontPlayerError(what, extra);
                                 return true;
                             }
@@ -329,6 +428,7 @@ public class MainActivity extends BridgeActivity {
                         
                     } catch (Exception e) {
                         e.printStackTrace();
+                        updatePlaybackState(PlaybackState.STATE_ERROR, 0, 0);
                         notifyFrontPlayerError(-1, -1);
                     }
                 }
@@ -343,6 +443,7 @@ public class MainActivity extends BridgeActivity {
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                         mediaPlayer.pause();
                         handler.removeCallbacks(progressUpdater);
+                        updatePlaybackState(PlaybackState.STATE_PAUSED, mediaPlayer.getCurrentPosition(), 0);
                         notifyFrontPlayerPaused();
                     }
                 }
@@ -358,6 +459,7 @@ public class MainActivity extends BridgeActivity {
                         mediaPlayer.start();
                         handler.removeCallbacks(progressUpdater);
                         handler.post(progressUpdater);
+                        updatePlaybackState(PlaybackState.STATE_PLAYING, mediaPlayer.getCurrentPosition(), speed);
                         notifyFrontPlayerResumed();
                     }
                 }
@@ -371,6 +473,11 @@ public class MainActivity extends BridgeActivity {
                 public void run() {
                     if (mediaPlayer != null) {
                         mediaPlayer.seekTo(seconds * 1000);
+                        if (mediaPlayer.isPlaying()) {
+                            updatePlaybackState(PlaybackState.STATE_PLAYING, seconds * 1000, speed);
+                        } else {
+                            updatePlaybackState(PlaybackState.STATE_PAUSED, seconds * 1000, 0);
+                        }
                     }
                 }
             });
@@ -385,6 +492,9 @@ public class MainActivity extends BridgeActivity {
                     if (mediaPlayer != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         try {
                             mediaPlayer.setPlaybackParams(mediaPlayer.getPlaybackParams().setSpeed(rate));
+                            if (mediaPlayer.isPlaying()) {
+                                updatePlaybackState(PlaybackState.STATE_PLAYING, mediaPlayer.getCurrentPosition(), rate);
+                            }
                         } catch (Exception e) {
                             // 某些机型如果对特异倍速抛出异常，做降级处理
                             e.printStackTrace();
@@ -402,12 +512,22 @@ public class MainActivity extends BridgeActivity {
                     if (mediaPlayer != null) {
                         mediaPlayer.stop();
                         handler.removeCallbacks(progressUpdater);
+                        updatePlaybackState(PlaybackState.STATE_STOPPED, 0, 0);
                     }
                 }
             });
         }
 
         public void release() {
+            if (mediaSession != null) {
+                try {
+                    mediaSession.setActive(false);
+                    mediaSession.release();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                mediaSession = null;
+            }
             if (mediaPlayer != null) {
                 try {
                     mediaPlayer.release();
