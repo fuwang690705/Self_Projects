@@ -431,7 +431,7 @@ export async function createAudioStream(fileId, rangeHeader) {
   }
   if (rangeHeader) headers.Range = rangeHeader
 
-  const response = await fetch(fullWebdavUrl(path), {
+  const response = await fetchWithRetry(fullWebdavUrl(path), {
     method: 'GET',
     headers
   })
@@ -455,6 +455,45 @@ function parseRange(rangeHeader, size) {
   if (start > end) return null
 
   return { start, end }
+}
+
+function normalizeHttpUrl(rawUrl) {
+  try {
+    return new URL(String(rawUrl || '')).toString()
+  } catch {
+    throw new AppError('远程音频地址无效。', 400)
+  }
+}
+
+function shouldRetryFetch(error) {
+  const code = String(error?.cause?.code || error?.code || '')
+  return [
+    'ECONNRESET',
+    'ECONNREFUSED',
+    'ECONNABORTED',
+    'ETIMEDOUT',
+    'UND_ERR_CONNECT_TIMEOUT',
+    'UND_ERR_HEADERS_TIMEOUT',
+    'UND_ERR_SOCKET'
+  ].includes(code) || String(error?.message || '').includes('fetch failed')
+}
+
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  let lastError = null
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetch(url, options)
+    } catch (error) {
+      lastError = error
+      if (attempt === retries || !shouldRetryFetch(error)) {
+        throw error
+      }
+      await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)))
+    }
+  }
+
+  throw lastError
 }
 
 function createLocalAudioStream(fileId, rangeHeader) {
@@ -628,7 +667,7 @@ async function downloadRemoteAudioToCache(cacheKey, downloadUrl, headers = {}) {
 
   fs.mkdirSync(path.dirname(cachePath), { recursive: true })
   const tempPath = `${cachePath}.tmp-${process.pid}-${Date.now()}`
-  const response = await fetch(downloadUrl, { method: 'GET', headers })
+  const response = await fetchWithRetry(normalizeHttpUrl(downloadUrl), { method: 'GET', headers })
   if (!response.ok) {
     throw new AppError(`拉取 WMA 音频失败：${response.status}`, response.status)
   }
@@ -673,10 +712,7 @@ async function createCachedTranscodedRemoteAudioStream(cacheKey, downloadUrl, he
 }
 
 async function createRemoteAudioStream(fileId, rangeHeader) {
-  const url = remoteUrlFromFileId(fileId)
-  if (!/^https?:\/\//i.test(url)) {
-    throw new AppError('远程音频地址无效。', 400)
-  }
+  const url = normalizeHttpUrl(remoteUrlFromFileId(fileId))
 
   if (extensionFromNameOrUrl(url) === '.wma') {
     return createCachedTranscodedRemoteAudioStream(`remote:${url}`, url, {}, rangeHeader)
@@ -684,7 +720,7 @@ async function createRemoteAudioStream(fileId, rangeHeader) {
 
   const headers = {}
   if (rangeHeader) headers.Range = rangeHeader
-  const response = await fetch(url, { method: 'GET', headers })
+  const response = await fetchWithRetry(url, { method: 'GET', headers })
   if (!(response.ok || response.status === 206)) {
     throw new AppError(`拉取远程音频失败：${response.status}`, response.status)
   }
@@ -696,7 +732,7 @@ async function createSourceAudioStream(fileId, rangeHeader) {
   const headers = { ...(source.headers || {}) }
   if (rangeHeader) headers.Range = rangeHeader
 
-  const response = await fetch(source.url, {
+  const response = await fetchWithRetry(normalizeHttpUrl(source.url), {
     method: 'GET',
     headers
   })

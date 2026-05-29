@@ -68,32 +68,54 @@
             </div>
 
             <div class="book-list">
-              <button
-                v-for="book in books"
+              <div
+                v-for="book in visibleBooks"
                 :key="book.id"
-                class="book-row"
-                :class="{ active: book.id === currentBook?.id }"
-                @click="openBookFromShelf(book)"
+                class="book-row-shell"
+                :class="{ open: swipedBookId === book.id && swipeOffset < 0 }"
+                @touchstart="onBookSwipeStart(book, $event)"
+                @touchmove="onBookSwipeMove($event)"
+                @touchend="onBookSwipeEnd"
+                @touchcancel="onBookSwipeEnd"
               >
-                <span class="book-row-cover">
-                  <img v-if="coverVisible(book)" :src="coverUrlFor(book)" alt="" @error="markCoverFailed(book)" />
-                  <span v-else>{{ book.title.slice(0, 1) }}</span>
-                </span>
-                <span class="book-row-copy">
-                  <strong class="marquee-title" :class="{ scrolling: isLongBookTitle(book.title) }">
-                    <span v-if="isLongBookTitle(book.title)" class="marquee-track">
-                      <span>{{ book.title }}</span>
-                      <span aria-hidden="true">{{ book.title }}</span>
-                    </span>
-                    <span v-else>{{ book.title }}</span>
-                  </strong>
-                  <small>{{ bookAuthor(book) }}</small>
-                  <em>{{ bookSubTitle(book) }}</em>
-                </span>
-                <span class="book-row-meta">
-                  <el-icon><ArrowRight /></el-icon>
-                </span>
-              </button>
+                <div class="book-row-actions">
+                  <button
+                    class="book-row-action"
+                    :class="{ remove: isBookFavorited(book) }"
+                    @click.stop="toggleBookFavorite(book)"
+                  >
+                    {{ isBookFavorited(book) ? '移除' : '收藏' }}
+                  </button>
+                  <button class="book-row-action danger" @click.stop="removeBookFromShelf(book)">
+                    删除
+                  </button>
+                </div>
+                <button
+                  class="book-row"
+                  :class="{ active: book.id === currentBook?.id }"
+                  :style="{ transform: `translateX(${swipedBookId === book.id ? swipeOffset : 0}px)` }"
+                  @click="openBookRow(book)"
+                >
+                  <span class="book-row-cover">
+                    <img v-if="coverVisible(book)" :src="coverUrlFor(book)" alt="" @error="markCoverFailed(book)" />
+                    <span v-else>{{ book.title.slice(0, 1) }}</span>
+                  </span>
+                  <span class="book-row-copy">
+                    <strong class="marquee-title" :class="{ scrolling: isLongBookTitle(book.title) }">
+                      <span v-if="isLongBookTitle(book.title)" class="marquee-track">
+                        <span>{{ book.title }}</span>
+                        <span aria-hidden="true">{{ book.title }}</span>
+                      </span>
+                      <span v-else>{{ book.title }}</span>
+                    </strong>
+                    <small>{{ bookAuthor(book) }}</small>
+                    <em>{{ bookSubTitle(book) }}</em>
+                  </span>
+                  <span class="book-row-meta">
+                    <el-icon><ArrowRight /></el-icon>
+                  </span>
+                </button>
+              </div>
             </div>
           </template>
         </section>
@@ -131,7 +153,6 @@
                 <small v-if="currentChapter">剩余 {{ remainingTime }}</small>
               </div>
             </div>
-          </div>
 
           <div class="player-console">
             <div class="progress-area">
@@ -192,6 +213,7 @@
                 <span>目录</span>
               </button>
             </div>
+          </div>
           </div>
 
           <audio
@@ -719,7 +741,149 @@
       <template #header>
         <strong>关于极简听书</strong>
       </template>
-      <p class="about-copy">一个面向移动端的私人听书播放器，当前支持 WebDAV 音频目录、书架、播放进度和倍速播放。</p>
+      <p class="about-copy" style="margin-bottom: 12px;">一个面向移动端的私人听书播放器，当前支持 WebDAV 音频目录、书架、播放进度和倍速播放。</p>
+      <div 
+        class="about-version-line" 
+        :class="{ 'is-admin-trigger': user?.account === 'admin' }"
+        @click="handleAboutVersionClick"
+      >
+        <span>当前版本: v{{ CURRENT_VERSION_NAME }}</span>
+      </div>
+      <el-button
+        v-if="isDeveloperOptionsUnlocked"
+        class="about-dev-btn"
+        @click="openReleaseManager"
+      >
+        <el-icon><Upload /></el-icon>
+        版本发布管理
+      </el-button>
+    </el-dialog>
+
+    <!-- 版本更新弹窗 (Version Update Popup) -->
+    <el-dialog
+      v-model="updateVisible"
+      width="min(90vw, 360px)"
+      :show-close="!latestVersion?.isForceUpdate"
+      :close-on-click-modal="!latestVersion?.isForceUpdate"
+      :close-on-press-escape="!latestVersion?.isForceUpdate"
+      :before-close="handleBeforeUpdateClose"
+      class="clean-dialog update-dialog"
+    >
+      <div class="update-header-hero">
+        <div class="update-icon-pulse">
+          <el-icon><Promotion /></el-icon>
+        </div>
+        <h3>发现新版本</h3>
+        <span class="update-version-badge">v{{ latestVersion?.versionName }}</span>
+      </div>
+      <div class="update-content-body">
+        <div class="update-notes-title">
+          <el-icon><Warning /></el-icon>
+          <strong>更新日志</strong>
+        </div>
+        <div class="update-notes-box">{{ latestVersion?.releaseNotes }}</div>
+        <div class="update-dialog-footer" :class="{ 'has-cancel': !latestVersion?.isForceUpdate }">
+          <button
+            v-if="!latestVersion?.isForceUpdate"
+            class="update-btn update-btn-cancel"
+            @click="skipThisVersion"
+          >
+            稍后提示
+          </button>
+          <button
+            class="update-btn update-btn-confirm"
+            :loading="isDownloading"
+            @click="downloadAndInstallApk"
+          >
+            <el-icon><Download /></el-icon>
+            立即更新
+          </button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 管理员版本发布弹窗 (Release Version Dialog) -->
+    <el-dialog
+      v-model="releaseMgrVisible"
+      width="min(92vw, 420px)"
+      class="clean-dialog release-dialog"
+    >
+      <template #header>
+        <div class="release-dialog-title">
+          <el-icon><Upload /></el-icon>
+          <strong>发布新版本</strong>
+        </div>
+      </template>
+      <el-form class="auth-form" label-position="top" @submit.prevent>
+        <el-form-item label="管理员密码">
+          <el-input v-model="releaseForm.passcode" type="password" show-password placeholder="请输入发布密码">
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        
+        <div class="release-form-row">
+          <el-form-item label="版本名称">
+            <el-input v-model="releaseForm.versionName" placeholder="如 1.1.0" />
+          </el-form-item>
+          <el-form-item label="版本号 (Code)">
+            <el-input v-model.number="releaseForm.versionCode" type="number" placeholder="如 2" />
+          </el-form-item>
+        </div>
+
+        <el-form-item label="选择 APK 文件">
+          <div 
+            class="apk-file-picker" 
+            :class="{ 'has-file': !!releaseApkFile }"
+            @click="triggerApkSelect"
+          >
+            <el-icon class="apk-picker-icon">
+              <FolderChecked v-if="releaseApkFile" />
+              <FolderOpened v-else />
+            </el-icon>
+            <span class="apk-picker-label">
+              {{ releaseApkFile ? '已选择 APK 文件' : '点击选择新版 APK 文件' }}
+            </span>
+            <span v-if="releaseApkFilename" class="apk-picker-filename">
+              {{ releaseApkFilename }}
+            </span>
+          </div>
+          <input
+            ref="releaseFileInputRef"
+            type="file"
+            accept=".apk"
+            class="hidden-file-input"
+            @change="onApkFileChange"
+          />
+        </el-form-item>
+
+        <el-form-item label="更新日志">
+          <el-input
+            v-model="releaseForm.releaseNotes"
+            type="textarea"
+            :rows="3"
+            placeholder="请填写本次更新内容（支持换行）"
+          />
+        </el-form-item>
+
+        <div class="release-switch-item">
+          <span class="release-switch-label">是否强制更新</span>
+          <el-switch v-model="releaseForm.isForceUpdate" />
+        </div>
+      </el-form>
+
+      <div class="dialog-actions">
+        <el-button 
+          type="primary" 
+          class="auth-primary" 
+          :loading="isReleasing" 
+          @click="submitRelease"
+        >
+          确认上传并发布
+        </el-button>
+        <el-button @click="releaseMgrVisible = false">取消</el-button>
+      </div>
     </el-dialog>
 
     <el-dialog v-model="sourceDetailVisible" width="min(92vw, 420px)" class="clean-dialog source-detail-dialog">
@@ -980,10 +1144,11 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAuthConfig,
   getAuthStatus,
+  getSubscriptionSources,
   getAudioUrl,
   getBooks,
   getPlaybackRecords,
@@ -997,7 +1162,10 @@ import {
   saveAuthConfig,
   savePlaybackRecord,
   searchSubscriptionBooks,
-  updateUserProfile
+  updateUserProfile,
+  getLatestVersion,
+  releaseNewVersion,
+  verifyAdminPasscode
 } from './api'
 import { loadPlaybackState, savePlaybackState } from './storage'
 
@@ -1023,6 +1191,29 @@ const isAuthing = ref(false)
 const loginVisible = ref(false)
 const settingsVisible = ref(false)
 const aboutVisible = ref(false)
+
+// App Version states
+const CURRENT_VERSION_NAME = '1.0.0'
+const CURRENT_VERSION_CODE = 1
+const updateVisible = ref(false)
+const latestVersion = ref(null)
+const skippedVersionCodeKey = 'my-read-skipped-version-code:v1'
+const isDownloading = ref(false)
+const aboutClickCount = ref(0)
+const isDeveloperOptionsUnlocked = ref(false)
+const releaseMgrVisible = ref(false)
+const releaseFileInputRef = ref(null)
+const releaseApkFile = ref(null)
+const releaseApkFilename = ref('')
+const isReleasing = ref(false)
+const releaseForm = reactive({
+  passcode: '',
+  versionName: '',
+  versionCode: '',
+  releaseNotes: '',
+  isForceUpdate: false
+})
+
 const loginMode = ref('login')
 const pendingResumeTime = ref(0)
 const chapterSheetVisible = ref(false)
@@ -1050,10 +1241,13 @@ const skipOutroSeconds = ref(playerSettings.skipOutroSeconds || 0)
 const isFavorite = ref(false)
 const isSavingProfile = ref(false)
 const favoriteBooks = ref([])
+const hiddenBookIds = ref(loadJson('my-read-hidden-books', []))
 const playbackRecords = ref({})
 const totalListenSeconds = ref(0)
 const todayListenSeconds = ref(0)
 const streakDays = ref(0)
+const swipedBookId = ref('')
+const swipeOffset = ref(0)
 const pullDistance = ref(0)
 const pullStartY = ref(0)
 const isPulling = ref(false)
@@ -1072,6 +1266,15 @@ let sleepTimerId = null
 let lastTrackedTime = 0
 let lastProgressSync = 0
 let audioErrorToastVisible = false
+const swipeActionWidth = 168
+const bookSwipe = reactive({
+  id: '',
+  startX: 0,
+  startY: 0,
+  startOffset: 0,
+  active: false,
+  horizontal: false
+})
 
 const settingsForm = reactive({
   baseUrl: '',
@@ -1117,14 +1320,14 @@ const waveBars = [
   22, 18, 23, 29, 34, 38, 35, 30
 ]
 
-const presetBookSources = [
+const presetBookSources = ref([
   { id: 'ting15', name: 'Ting15', url: 'https://m.ting15.com' },
   { id: 'bilibili', name: 'BiliBili', url: 'https://m.bilibili.com' },
   { id: 'kuwo', name: '酷我畅听', url: 'https://kuwo.cn' },
   { id: 'lanren', name: '懒人听书', url: 'https://m.lrts.me' },
   { id: 'bokan', name: '博看有声', url: 'https://voicewk.bookan.com.cn' },
   { id: 'yuntu', name: '云图有声', url: 'http://yuntuwechat.yuntuys.com' }
-]
+])
 
 const localSourceState = loadJson('my-read-local-source-selection', {
   name: '',
@@ -1134,6 +1337,7 @@ selectedLocalSourceName.value = localSourceState.name || ''
 selectedLocalSourceSummary.value = localSourceState.summary || ''
 
 const chapters = computed(() => currentBook.value?.chapters || [])
+const visibleBooks = computed(() => books.value.filter((book) => !hiddenBookIds.value.includes(book.id)))
 const sourcePreviewChapters = computed(() => (selectedSourceBook.value?.chapters || []).slice(0, 8))
 const visibleSourcePreviewChapters = computed(() => sourcePreviewChapters.value.filter((chapter) => chapterDisplayName(chapter)))
 const currentIndex = computed(() => chapters.value.findIndex((item) => item.fileId === currentChapter.value?.fileId))
@@ -1174,10 +1378,22 @@ const sourceStatusCopy = computed(() => {
   if (authStatus.value?.sourceType === 'webdav') return '当前通过 WebDAV 读取音频，可直接连接 AList /dav/'
   return '登录后在授权中心连接 AList WebDAV'
 })
+
 const sourceSearchEmptyText = computed(() => {
   if (isSearchingSources.value) return '正在搜索'
   return sourceSearchKeyword.value.trim() ? '没有找到匹配书籍' : '输入关键词开始搜索'
 })
+
+async function loadSubscriptionSources() {
+  try {
+    const data = await getSubscriptionSources()
+    if (data && Array.isArray(data.sources) && data.sources.length > 0) {
+      presetBookSources.value = data.sources
+    }
+  } catch (error) {
+    console.error('加载系统订阅源失败:', error)
+  }
+}
 
 onMounted(async () => {
   const saved = loadPlaybackState()
@@ -1186,6 +1402,7 @@ onMounted(async () => {
   pendingResumeTime.value = saved.currentTime || 0
   loadSavedCollections()
   loadListeningStats()
+  loadSubscriptionSources()
 
   const savedRecords = await loadPlaybackRecords()
   await Promise.allSettled([loadUser(), loadConfig(), loadAuthStatus()])
@@ -1194,6 +1411,7 @@ onMounted(async () => {
     window.history.replaceState({}, '', window.location.pathname)
   }
   await loadBooks({ ...saved, records: savedRecords })
+  checkAppVersion()
 })
 
 onUnmounted(() => {
@@ -1698,7 +1916,6 @@ async function loadAudioForChapter(chapter, shouldAutoPlay) {
   try {
     const { url, duration: probedDuration } = await getAudioUrl(chapter.fileId)
     if (!url) throw new Error('没有获取到音频播放地址')
-    await verifyAudioStream(url)
     duration.value = Number.isFinite(probedDuration) && probedDuration > 0 ? probedDuration : 0
     audioRef.value.pause()
     audioRef.value.removeAttribute('src')
@@ -1735,6 +1952,15 @@ async function verifyAudioStream(url) {
 
 function normalizeAudioError(error) {
   const message = String(error?.message || '')
+  if (message.includes('This chapter requires purchase on the source site')) {
+    return '当前章节在源站需要付费，暂时无法播放'
+  }
+  if (message.includes('The source site is rate limiting requests')) {
+    return '当前书源请求过于频繁，请稍后再试'
+  }
+  if (message.includes('fetch failed')) {
+    return '音频源连接不稳定，请重试或切换下一章'
+  }
   if (message.includes('supported sources') || message.includes('MEDIA_ERR_SRC_NOT_SUPPORTED')) {
     return '当前音频无法播放，请检查音频格式或听书源配置'
   }
@@ -1848,22 +2074,68 @@ function setPlaybackRate(rate) {
   playbackRateDraft.value = normalized
 }
 
-function toggleFavorite() {
-  if (!currentBook.value) return
-  const exists = favoriteBooks.value.some((book) => book.id === currentBook.value.id)
-  if (exists) {
-    favoriteBooks.value = favoriteBooks.value.filter((book) => book.id !== currentBook.value.id)
-  } else {
-    favoriteBooks.value.unshift({
-      id: currentBook.value.id,
-      title: currentBook.value.title,
-      chapterCount: chapters.value.length,
-      savedAt: Date.now()
-    })
+function favoriteEntryFromBook(book) {
+  return {
+    id: book.id,
+    title: book.title,
+    chapterCount: Array.isArray(book.chapters) ? book.chapters.length : (book.chapterCount || 0),
+    savedAt: Date.now()
   }
+}
+
+function isBookFavorited(book) {
+  return Boolean(book && favoriteBooks.value.some((item) => item.id === book.id))
+}
+
+function addBookToFavorites(book) {
+  favoriteBooks.value = [
+    favoriteEntryFromBook(book),
+    ...favoriteBooks.value.filter((item) => item.id !== book.id)
+  ]
   saveJson('my-read-favorites', favoriteBooks.value)
   updateFavoriteState()
-  ElMessage.success(isFavorite.value ? '\u003f\u003f\u003f\u003f\u003f\u003f\u003f' : '\u003f\u003f\u003f\u003f\u003f')
+}
+
+function removeBookFromFavorites(bookId) {
+  favoriteBooks.value = favoriteBooks.value.filter((item) => item.id !== bookId)
+  saveJson('my-read-favorites', favoriteBooks.value)
+  updateFavoriteState()
+}
+
+function removeBookFromShelf(book) {
+  if (!book) return
+  if (!hiddenBookIds.value.includes(book.id)) {
+    hiddenBookIds.value = [...hiddenBookIds.value, book.id]
+    saveJson('my-read-hidden-books', hiddenBookIds.value)
+  }
+  if (currentBook.value?.id === book.id) {
+    const nextBook = visibleBooks.value.find((item) => item.id !== book.id) || null
+    currentBook.value = nextBook
+    currentChapter.value = nextBook?.chapters?.[0] || null
+  }
+  closeBookSwipe()
+  ElMessage.success('已从书架移除')
+}
+
+function toggleBookFavorite(book) {
+  if (!book) return
+  const exists = isBookFavorited(book)
+  if (exists) {
+    removeBookFromFavorites(book.id)
+    ElMessage.success('已移除收藏')
+  } else {
+    addBookToFavorites(book)
+    ElMessage.success('已加入收藏')
+  }
+  closeBookSwipe()
+}
+
+function toggleFavorite() {
+  if (!currentBook.value) return
+  toggleBookFavorite({
+    ...currentBook.value,
+    chapters: chapters.value
+  })
 }
 
 function setSleepTimer(minutes) {
@@ -1927,6 +2199,79 @@ watch(currentBook, updateFavoriteState)
 function selectChapterFromSheet(chapter) {
   chapterSheetVisible.value = false
   selectChapter(chapter, true)
+}
+
+function closeBookSwipe() {
+  swipedBookId.value = ''
+  swipeOffset.value = 0
+  bookSwipe.id = ''
+  bookSwipe.startX = 0
+  bookSwipe.startY = 0
+  bookSwipe.startOffset = 0
+  bookSwipe.active = false
+  bookSwipe.horizontal = false
+}
+
+function onBookSwipeStart(book, event) {
+  const touch = event.touches?.[0]
+  if (!touch) return
+  if (swipedBookId.value && swipedBookId.value !== book.id) {
+    closeBookSwipe()
+  }
+  bookSwipe.id = book.id
+  bookSwipe.startX = touch.clientX
+  bookSwipe.startY = touch.clientY
+  bookSwipe.startOffset = swipedBookId.value === book.id ? swipeOffset.value : 0
+  bookSwipe.active = true
+  bookSwipe.horizontal = false
+}
+
+function onBookSwipeMove(event) {
+  if (!bookSwipe.active) return
+  const touch = event.touches?.[0]
+  if (!touch) return
+
+  const deltaX = touch.clientX - bookSwipe.startX
+  const deltaY = touch.clientY - bookSwipe.startY
+
+  if (!bookSwipe.horizontal) {
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      closeBookSwipe()
+      return
+    }
+    if (Math.abs(deltaX) < 8) return
+    bookSwipe.horizontal = true
+  }
+
+  if (event.cancelable) {
+    event.preventDefault()
+  }
+  swipedBookId.value = bookSwipe.id
+  swipeOffset.value = Math.max(-swipeActionWidth, Math.min(0, bookSwipe.startOffset + deltaX))
+}
+
+function onBookSwipeEnd() {
+  if (!bookSwipe.id) return
+  if (swipedBookId.value === bookSwipe.id && swipeOffset.value <= -(swipeActionWidth / 2)) {
+    swipeOffset.value = -swipeActionWidth
+  } else {
+    swipedBookId.value = ''
+    swipeOffset.value = 0
+  }
+  bookSwipe.id = ''
+  bookSwipe.startX = 0
+  bookSwipe.startY = 0
+  bookSwipe.startOffset = 0
+  bookSwipe.active = false
+  bookSwipe.horizontal = false
+}
+
+function openBookRow(book) {
+  if (swipedBookId.value === book.id && swipeOffset.value < 0) {
+    closeBookSwipe()
+    return
+  }
+  openBookFromShelf(book)
 }
 
 function playPrevious() {
@@ -2106,6 +2451,157 @@ function formatListenDuration(seconds, includeDays = false) {
   const minutes = totalMinutes % 60
   if (includeDays) return `${days}天${hours}小时${minutes}分钟`
   return `${hours}小时${minutes}分钟`
+}
+
+// ==========================================
+// App Version Update & Release Logic
+// ==========================================
+async function handleAboutVersionClick() {
+  // 仅限已登录且账号名称为 admin 的用户触发
+  if (user.value?.account !== 'admin') {
+    return
+  }
+
+  if (isDeveloperOptionsUnlocked.value) {
+    openReleaseManager()
+    return
+  }
+  
+  aboutClickCount.value++
+  if (aboutClickCount.value >= 5) {
+    aboutClickCount.value = 0 // 重置连击计数
+    try {
+      const { value: passcode } = await ElMessageBox.prompt('请输入管理员密码解锁发布管理', '安全验证', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputType: 'password',
+        inputPlaceholder: '请输入发布密码',
+        inputPattern: /\S+/,
+        inputErrorMessage: '密码不能为空'
+      })
+      
+      // 调用后端密码比对接口进行阻断验证
+      await verifyAdminPasscode(passcode)
+      
+      isDeveloperOptionsUnlocked.value = true
+      releaseForm.passcode = passcode
+      ElMessage.success('🎉 管理员权限验证成功！已解锁发布管理。')
+      openReleaseManager()
+    } catch (error) {
+      if (error !== 'cancel') {
+        ElMessage.error(error.message || '密码验证失败，请重试')
+      }
+    }
+  }
+}
+
+function openReleaseManager() {
+  aboutVisible.value = false
+  releaseMgrVisible.value = true
+}
+
+function triggerApkSelect() {
+  releaseFileInputRef.value?.click()
+}
+
+function onApkFileChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.apk')) {
+    ElMessage.error('请选择有效的 .apk 文件！')
+    return
+  }
+  releaseApkFile.value = file
+  releaseApkFilename.value = file.name
+}
+
+async function submitRelease() {
+  if (!releaseForm.passcode) return ElMessage.warning('请输入管理员发布密码！')
+  if (!releaseForm.versionName) return ElMessage.warning('请输入版本名称！')
+  if (!releaseForm.versionCode) return ElMessage.warning('请输入版本号！')
+  if (!releaseApkFile.value) return ElMessage.warning('请选择需要上传的 APK 文件！')
+  if (!releaseForm.releaseNotes) return ElMessage.warning('请填写更新日志！')
+
+  isReleasing.value = true
+  try {
+    const formData = new FormData()
+    formData.append('passcode', releaseForm.passcode)
+    formData.append('versionName', releaseForm.versionName)
+    formData.append('versionCode', releaseForm.versionCode)
+    formData.append('releaseNotes', releaseForm.releaseNotes)
+    formData.append('isForceUpdate', String(releaseForm.isForceUpdate))
+    formData.append('apk', releaseApkFile.value)
+
+    await releaseNewVersion(formData)
+    ElMessage.success('版本发布成功！')
+    releaseMgrVisible.value = false
+    
+    // Reset form
+    releaseForm.versionName = ''
+    releaseForm.versionCode = ''
+    releaseForm.releaseNotes = ''
+    releaseForm.isForceUpdate = false
+    releaseApkFile.value = null
+    releaseApkFilename.value = ''
+    
+    // Check updates again
+    checkAppVersion()
+  } catch (error) {
+    ElMessage.error(error.message || '发布失败')
+  } finally {
+    isReleasing.value = false
+  }
+}
+
+function handleBeforeUpdateClose(done) {
+  if (latestVersion.value?.isForceUpdate) {
+    ElMessage.warning('本次更新为强制更新，请先下载安装。')
+    return
+  }
+  done()
+}
+
+function skipThisVersion() {
+  if (latestVersion.value) {
+    localStorage.setItem(skippedVersionCodeKey, String(latestVersion.value.versionCode))
+  }
+  updateVisible.value = false
+}
+
+function downloadAndInstallApk() {
+  if (!latestVersion.value?.apkUrl) return
+  isDownloading.value = true
+  ElMessage.success('正在为您下载最新 APK，请稍候...')
+  
+  const link = document.createElement('a')
+  link.href = latestVersion.value.apkUrl
+  link.download = `my-read-${latestVersion.value.versionName}.apk`
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  
+  setTimeout(() => {
+    isDownloading.value = false
+  }, 3000)
+}
+
+async function checkAppVersion() {
+  try {
+    const res = await getLatestVersion()
+    if (res && res.latest) {
+      latestVersion.value = res.latest
+      const lCode = res.latest.versionCode
+      if (lCode > CURRENT_VERSION_CODE) {
+        const skipped = localStorage.getItem(skippedVersionCodeKey)
+        if (res.latest.isForceUpdate || skipped !== String(lCode)) {
+          updateVisible.value = true
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('获取最新版本失败：', error.message)
+  }
 }
 
 </script>

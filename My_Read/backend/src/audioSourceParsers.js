@@ -66,8 +66,39 @@ function absoluteUrl(value, baseUrl) {
   return new URL(decodeEntities(value), baseUrl).href
 }
 
+function shouldRetryFetch(error) {
+  const code = String(error?.cause?.code || error?.code || '')
+  return [
+    'ECONNRESET',
+    'ECONNREFUSED',
+    'ECONNABORTED',
+    'ETIMEDOUT',
+    'UND_ERR_CONNECT_TIMEOUT',
+    'UND_ERR_HEADERS_TIMEOUT',
+    'UND_ERR_SOCKET'
+  ].includes(code) || String(error?.message || '').includes('fetch failed')
+}
+
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  let lastError = null
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetch(url, options)
+    } catch (error) {
+      lastError = error
+      if (attempt === retries || !shouldRetryFetch(error)) {
+        throw error
+      }
+      await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)))
+    }
+  }
+
+  throw lastError
+}
+
 async function fetchText(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     ...options,
     headers: {
       ...REQUEST_HEADERS,
@@ -79,7 +110,7 @@ async function fetchText(url, options = {}) {
 }
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     ...options,
     headers: {
       ...REQUEST_HEADERS,
@@ -680,7 +711,7 @@ export async function resolveSourceAudio(fileId) {
 
   if (!bookId || !page || !token) throw new AppError('Source playback parameters are incomplete.', 502)
 
-  const response = await fetch(`${SOURCES.ting15.baseUrl}/?s=api-getneoplay`, {
+  const response = await fetchWithRetry(`${SOURCES.ting15.baseUrl}/?s=api-getneoplay`, {
     method: 'POST',
     headers: {
       ...REQUEST_HEADERS,

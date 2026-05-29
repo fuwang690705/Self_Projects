@@ -22,7 +22,7 @@ async function request(path, options = {}) {
     headers: {
       ...jsonHeaders,
       'X-My-Read-Client-Id': clientId(),
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {})
     }
   })
@@ -153,5 +153,23 @@ export function addSubscribedBook(payload) {
   return request('/api/subscriptions/books', {
     method: 'POST',
     body: JSON.stringify(payload)
+  })
+}
+
+export function getLatestVersion() {
+  return request('/api/app-version/latest')
+}
+
+export function releaseNewVersion(formData) {
+  return request('/api/app-version/release', {
+    method: 'POST',
+    body: formData
+  })
+}
+
+export function verifyAdminPasscode(passcode) {
+  return request('/api/app-version/verify-passcode', {
+    method: 'POST',
+    body: JSON.stringify({ passcode })
   })
 }

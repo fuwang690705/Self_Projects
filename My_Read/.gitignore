@@ -1,15 +1,24 @@
 node_modules/
-dist/
 .npm-cache/
-backend/data/
 
 .env
 .env.*
 !.env.example
-!.env.production.example
+!.env.*.example
 
 *.log
 *.pid
-*.tar.gz
 
-.DS_Store
+dist/
+build/
+.vite/
+
+*.tar.gz
+.deploy_appvue_chunks/
+.deploy_appvue_chunks_small/
+.deploy_chunks/
+
+# Local data & caches
+data/
+backend/data/
+

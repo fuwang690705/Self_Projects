@@ -27,8 +27,12 @@
 .player-backdrop {
   position: relative;
   min-height: 0;
-  padding: 16px 18px 0;
+  height: 100%;
+  padding: 16px 18px 108px;
   color: var(--player-ink);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .player-backdrop::before {
@@ -103,10 +107,14 @@
 }
 
 .player-upper {
-  display: grid;
-  justify-items: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: clamp(10px, 2vh, 18px);
-  padding-top: clamp(10px, 2.4vh, 24px);
+  min-height: 0;
+  width: 100%;
 }
 
 .cover-stage {
@@ -243,10 +251,9 @@
 }
 
 .player-console {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 96px;
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
   display: grid;
   gap: clamp(10px, 1.8vh, 14px);
 }

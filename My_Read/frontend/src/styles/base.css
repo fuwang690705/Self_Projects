@@ -27,9 +27,9 @@ button {
   height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% -12%, rgba(232, 197, 126, 0.38), transparent 34%),
-    linear-gradient(180deg, #cfe2d4 0%, #eef3e8 46%, #f7f4ea 100%);
-  color: #14201f;
+    radial-gradient(circle at 50% -12%, rgba(255, 220, 130, 0.6), transparent 34%),
+    linear-gradient(180deg, #dcf0e2 0%, #f4f8f0 46%, #fefcf3 100%);
+  color: #1d332e;
   display: flex;
   justify-content: center;
 }
@@ -48,8 +48,8 @@ button {
   overflow: hidden;
   padding: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(239, 234, 227, 0.12) 46%, rgba(239, 234, 227, 0.86)),
-    var(--cover-seed, linear-gradient(135deg, #1e4e60, #d8b052));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 250, 246, 0.3) 46%, rgba(254, 252, 243, 0.9)),
+    var(--cover-seed, linear-gradient(135deg, #3fa191, #ffcf68));
 }
 
 .phone-frame.is-player .content,

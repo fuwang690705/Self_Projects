@@ -82,7 +82,7 @@ input {
 .alist-guide,
 .auth-dialog .el-dialog {
   border: 1px solid var(--quest-line);
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: var(--quest-shadow);
 }
 
@@ -263,6 +263,11 @@ input {
   white-space: nowrap;
 }
 
+.profile-metrics strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .continue-card,
 .book-row,
 .bookshelf-empty,
@@ -329,10 +334,10 @@ input {
 }
 
 .book-row {
-  min-height: 92px;
-  grid-template-columns: 58px minmax(0, 1fr) 22px;
-  gap: 11px;
-  padding: 11px;
+  min-height: 76px;
+  grid-template-columns: 48px minmax(0, 1fr) 22px;
+  gap: 10px;
+  padding: 9px;
 }
 
 .book-row.active {
@@ -341,8 +346,8 @@ input {
 }
 
 .book-row-cover {
-  width: 58px;
-  height: 72px;
+  width: 48px;
+  height: 60px;
   border: 1px solid rgba(23, 24, 43, 0.12);
   border-radius: 14px;
   background:
@@ -382,6 +387,7 @@ input {
 .profile-hero {
   padding: 16px;
   overflow: hidden;
+  border-radius: 24px;
   background:
     radial-gradient(circle at 88% 20%, rgba(255, 209, 90, 0.64) 0 30px, transparent 31px),
     linear-gradient(145deg, #3f75e8 0%, var(--quest-blue) 58%, var(--quest-blue-deep) 100%);
@@ -478,7 +484,7 @@ input {
 }
 
 .player-backdrop {
-  padding: 16px 18px 0;
+  padding: 16px 18px 108px;
 }
 
 .player-backdrop::before,
@@ -520,7 +526,7 @@ input {
 
 .player-art {
   border: 1px solid rgba(23, 24, 43, 0.16);
-  border-radius: 22px;
+  border-radius: 24px;
   background:
     radial-gradient(circle at 25% 24%, rgba(255, 253, 250, 0.82) 0 16px, transparent 17px),
     linear-gradient(140deg, var(--quest-blue), #315fda 54%, #2547b5);
@@ -660,9 +666,9 @@ input {
 .bottom-nav {
   --nav-bg: rgba(255, 253, 250, 0.94);
   --nav-border: rgba(23, 24, 43, 0.12);
-  --text-inactive: #838796;
-  --text-active: var(--quest-blue);
-  --center-bg: #fff3c9;
+  --text-inactive: #9db1a8;
+  --text-active: #2c5e4a;
+  --center-bg: rgba(226, 240, 203, 0.8);
   left: 18px;
   right: 18px;
   bottom: 16px;
@@ -696,9 +702,9 @@ input {
 .bottom-nav .nav-player-toggle.active .player-dock,
 .phone-frame.is-player .bottom-nav .nav-item.active .nav-icon-shell,
 .phone-frame.is-player .bottom-nav .nav-player-toggle.active .player-dock {
-  background: var(--quest-blue);
-  color: #fffdfa;
-  box-shadow: 0 8px 18px rgba(53, 110, 234, 0.22);
+  background: linear-gradient(145deg, #b5ead7, #a8e6cf);
+  color: #1a2f2b;
+  box-shadow: 0 8px 18px rgba(181, 234, 215, 0.4);
 }
 
 .nav-label {
@@ -1017,8 +1023,7 @@ input {
     width: 62px;
   }
 
-  .bookshelf-stats strong,
-  .profile-metrics strong {
+  .bookshelf-stats strong {
     font-size: 16px;
   }
 }

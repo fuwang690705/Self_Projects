@@ -4,71 +4,13 @@ import path from 'node:path'
 import { config } from './config.js'
 import { AppError } from './errors.js'
 
+import { getPool, isMysqlReady } from './db.js'
+
 const USERS_FILE = path.join(config.dataDir, 'users.json')
 const sessions = new Map()
-let mysqlPoolPromise
-let mysqlReady = false
-
-function mysqlConfig() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL
-  if (!process.env.MYSQL_HOST || !process.env.MYSQL_USER || !process.env.MYSQL_DATABASE) return null
-
-  return {
-    host: process.env.MYSQL_HOST,
-    port: Number(process.env.MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD || '',
-    database: process.env.MYSQL_DATABASE,
-    waitForConnections: true,
-    connectionLimit: 10,
-    namedPlaceholders: true
-  }
-}
 
 async function mysqlPool() {
-  const options = mysqlConfig()
-  if (!options) return null
-
-  if (!mysqlPoolPromise) {
-    mysqlPoolPromise = import('mysql2/promise').then(async ({ createPool }) => {
-      const pool = createPool(options)
-      await pool.execute(`
-        CREATE TABLE IF NOT EXISTS my_read_users (
-          id VARCHAR(32) PRIMARY KEY,
-          account VARCHAR(128) NOT NULL UNIQUE,
-          nickname VARCHAR(128) NOT NULL,
-          avatar_text VARCHAR(16) NOT NULL,
-          avatar_url TEXT NULL,
-          email VARCHAR(255) NULL,
-          salt VARCHAR(64) NOT NULL,
-          password_hash VARCHAR(128) NOT NULL,
-          created_at DATETIME NOT NULL
-        )
-      `)
-      await ensureMysqlUserProfileColumns(pool)
-      mysqlReady = true
-      return pool
-    }).catch((error) => {
-      mysqlPoolPromise = null
-      console.warn(`MySQL user store unavailable, falling back to file store: ${error.message}`)
-      return null
-    })
-  }
-
-  return mysqlPoolPromise
-}
-
-async function ensureMysqlUserProfileColumns(pool) {
-  for (const statement of [
-    'ALTER TABLE my_read_users ADD COLUMN avatar_url TEXT NULL',
-    'ALTER TABLE my_read_users ADD COLUMN email VARCHAR(255) NULL'
-  ]) {
-    try {
-      await pool.execute(statement)
-    } catch (error) {
-      if (error.code !== 'ER_DUP_FIELDNAME' && !String(error.message || '').includes('Duplicate column name')) throw error
-    }
-  }
+  return getPool()
 }
 
 function ensureDataDir() {
@@ -111,7 +53,7 @@ function publicUser(user) {
     avatarUrl: user.avatarUrl || '',
     email: user.email || '',
     createdAt: user.createdAt,
-    storage: mysqlReady ? 'mysql' : 'file'
+    storage: isMysqlReady() ? 'mysql' : 'file'
   }
 }
 

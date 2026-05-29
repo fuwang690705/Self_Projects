@@ -8,7 +8,7 @@ router.get('/playback/records', async (req, res, next) => {
   try {
     const user = await getSessionUser(req)
     const ownerId = playbackOwnerId(user, req.headers['x-my-read-client-id'])
-    res.json({ records: listPlaybackRecords(ownerId) })
+    res.json({ records: await listPlaybackRecords(ownerId) })
   } catch (error) {
     next(error)
   }
@@ -18,7 +18,7 @@ router.post('/playback/records', async (req, res, next) => {
   try {
     const user = await getSessionUser(req)
     const ownerId = playbackOwnerId(user, req.headers['x-my-read-client-id'])
-    const record = savePlaybackRecord(ownerId, req.body || {})
+    const record = await savePlaybackRecord(ownerId, req.body || {})
     res.json({ ok: true, record })
   } catch (error) {
     next(error)

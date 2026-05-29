@@ -1,10 +1,10 @@
 .bottom-nav {
-  --nav-bg: rgba(255, 255, 255, 0.58);
-  --nav-border: rgba(255, 255, 255, 0.72);
-  --text-inactive: #6e8a7e;
-  --text-active: #1f5c4e;
-  --icon-bg-active: #2f7468;
-  --center-bg: rgba(216, 238, 224, 0.74);
+  --nav-bg: rgba(255, 255, 255, 0.75);
+  --nav-border: rgba(255, 255, 255, 0.9);
+  --text-inactive: #9db1a8;
+  --text-active: #2c5e4a;
+  --icon-bg-active: #b5ead7;
+  --center-bg: rgba(226, 240, 203, 0.8);
   position: absolute;
   z-index: 20;
   left: 22px;
@@ -98,9 +98,9 @@
 }
 
 .nav-item.active .nav-icon-shell {
-  background: linear-gradient(145deg, #2f7468, #1f5c4e);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(31, 92, 78, 0.24);
+  background: linear-gradient(145deg, #b5ead7, #a8e6cf);
+  color: #1a2f2b;
+  box-shadow: 0 8px 18px rgba(181, 234, 215, 0.4);
 }
 
 .nav-player-toggle {
@@ -182,9 +182,9 @@
 }
 
 .bottom-nav .nav-player-toggle.active .player-dock {
-  background: linear-gradient(145deg, #2f7468, #1f5c4e);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(31, 92, 78, 0.24);
+  background: linear-gradient(145deg, #b5ead7, #a8e6cf);
+  color: #1a2f2b;
+  box-shadow: 0 8px 18px rgba(181, 234, 215, 0.4);
 }
 
 .bottom-nav .nav-player-toggle.playing .player-core {

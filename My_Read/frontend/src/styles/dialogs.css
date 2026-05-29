@@ -462,3 +462,337 @@
     justify-self: center;
   }
 }
+
+/* ==========================================================================
+   APP 版本更新弹窗 (Version Update Dialog)
+   ========================================================================== */
+.update-dialog .el-dialog {
+  overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+  box-shadow: 0 30px 80px rgba(10, 28, 26, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 0;
+}
+
+.update-dialog .el-dialog__header {
+  display: none; /* 隐藏默认头部，使用自定义精美头部 */
+}
+
+.update-dialog .el-dialog__body {
+  padding: 0;
+}
+
+.update-header-hero {
+  position: relative;
+  height: 160px;
+  background: linear-gradient(135deg, #193945 0%, #2f6f67 55%, #b1785f 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.update-header-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 60%);
+  animation: rotateHero 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotateHero {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.update-icon-pulse {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 10px 25px rgba(25, 57, 69, 0.3);
+  animation: pulseIcon 2s infinite ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes pulseIcon {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 16px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.update-header-hero h3 {
+  margin: 12px 0 0;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.update-version-badge {
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.update-content-body {
+  padding: 24px;
+}
+
+.update-notes-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #173843;
+  margin-bottom: 12px;
+}
+
+.update-notes-title .el-icon {
+  color: #b1785f;
+}
+
+.update-notes-box {
+  background: #f4faf6;
+  border: 1px solid rgba(47, 111, 103, 0.08);
+  border-radius: 10px;
+  padding: 16px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  color: #4a5c58;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* 自定义滚动条 */
+.update-notes-box::-webkit-scrollbar {
+  width: 5px;
+}
+.update-notes-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.update-notes-box::-webkit-scrollbar-thumb {
+  background: rgba(47, 111, 103, 0.2);
+  border-radius: 10px;
+}
+
+.update-dialog-footer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.update-dialog-footer.has-cancel {
+  grid-template-columns: 1fr 1.3fr;
+}
+
+.update-btn {
+  height: 46px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.update-btn-cancel {
+  border: 1.5px solid rgba(23, 56, 67, 0.12);
+  background: #ffffff;
+  color: #516763;
+}
+
+.update-btn-cancel:hover {
+  background: #fbfcf8;
+  border-color: rgba(23, 56, 67, 0.2);
+  color: #173843;
+}
+
+.update-btn-confirm {
+  border: none;
+  background: linear-gradient(135deg, #193945 0%, #2f6f67 55%, #bd8065 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(25, 57, 69, 0.25);
+}
+
+.update-btn-confirm:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 10px 25px rgba(25, 57, 69, 0.32);
+}
+
+/* ==========================================================================
+   管理员版本发布管理弹窗 (Release Manager Dialog)
+   ========================================================================== */
+.release-dialog .el-dialog {
+  border-radius: 12px;
+  background: #fbfcf8;
+  box-shadow: 0 26px 70px rgba(14, 24, 28, 0.3);
+}
+
+.release-dialog .el-dialog__header {
+  padding: 20px 20px 10px;
+  border-bottom: 1px solid rgba(23, 35, 36, 0.06);
+}
+
+.release-dialog .el-dialog__body {
+  padding: 16px 20px 20px;
+}
+
+.release-dialog-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #173843;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.release-dialog-title .el-icon {
+  color: #2f6f67;
+}
+
+.apk-file-picker {
+  display: grid;
+  gap: 8px;
+  border: 1.5px dashed rgba(47, 111, 103, 0.2);
+  background: #f4faf6;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.apk-file-picker:hover {
+  border-color: #2f6f67;
+  background: rgba(47, 111, 103, 0.05);
+}
+
+.apk-file-picker.has-file {
+  border-style: solid;
+  border-color: #2e7863;
+  background: #f0fdf4;
+}
+
+.apk-picker-icon {
+  font-size: 24px;
+  color: #7c8a87;
+  margin: 0 auto;
+}
+
+.apk-file-picker.has-file .apk-picker-icon {
+  color: #2e7863;
+}
+
+.apk-picker-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #516763;
+}
+
+.apk-picker-filename {
+  font-size: 12px;
+  color: #2e7863;
+  font-family: monospace;
+  word-break: break-all;
+  margin-top: 4px;
+  font-weight: bold;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.release-form-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.release-switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f3f6f3;
+  border: 1px solid rgba(23, 35, 36, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.release-switch-label {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #445653;
+}
+
+.about-version-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  color: #82908c;
+  user-select: none;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.about-version-line.is-admin-trigger {
+  cursor: pointer;
+}
+
+.about-version-line.is-admin-trigger:hover {
+  background: rgba(23, 35, 36, 0.04);
+  color: #173843;
+}
+
+.about-dev-btn {
+  margin-top: 14px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 900;
+  border: 1px dashed #2f6f67;
+  color: #2f6f67;
+  background: rgba(47, 111, 103, 0.05);
+}
+
+.about-dev-btn:hover {
+  background: rgba(47, 111, 103, 0.1);
+  border-color: #2f6f67;
+  color: #173843;
+}
+

@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { listAudioBook } from '../aliyunClient.js'
 import { listSubscribedBooks } from '../subscriptionStore.js'
+import { getSessionUser } from '../userStore.js'
 
 const router = Router()
 
 router.get('/books', async (req, res, next) => {
   try {
     const books = await listAudioBook()
-    const subscribed = listSubscribedBooks()
+    const user = await getSessionUser(req)
+    const subscribed = await listSubscribedBooks(user?.id)
     if (subscribed.length) {
       const sourceBooks = subscribed
         .filter((item) => Array.isArray(item.chapters) && item.chapters.length)
