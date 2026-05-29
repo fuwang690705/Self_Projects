@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-top: calc(10px + env(safe-area-inset-top)); /* 适配刘海屏与系统状态栏，让标题和返回按钮优雅下移 */
 }
 
 .page-topbar .icon-button {

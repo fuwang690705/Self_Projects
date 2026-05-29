@@ -181,6 +181,15 @@
 
 ## 项目必读（部署与联调）
 
+### SSH 服务器配置
+```ini
+[mcp_servers.fone_vps.env]
+SSH_HOST = "129.153.195.145"
+SSH_KEY_PATH = 'C:\Users\69276\.ssh\codex_fone_vps'
+SSH_PORT = "5522"
+SSH_USER = "root"
+```
+
 ### 线上域名
 - 站点：`http://listen.techfone.xyz/`
 - API 示例：`http://listen.techfone.xyz/api/auth/status`
